@@ -1,0 +1,9 @@
+build/
+install/
+log/
+*_ws/
+*.o
+*.so
+*.a
+CMakeCache.txt
+CMakeFiles/
