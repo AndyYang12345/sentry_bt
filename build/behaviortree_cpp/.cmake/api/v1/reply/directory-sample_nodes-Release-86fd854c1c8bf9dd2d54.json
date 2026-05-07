@@ -1,0 +1,69 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"INSTALL"
+		],
+		"files" : 
+		[
+			"sample_nodes/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "share/behaviortree_cpp/bt_plugins",
+			"paths" : 
+			[
+				"sample_nodes/bin/libcrossdoor_nodes_dyn.so"
+			],
+			"targetId" : "crossdoor_nodes_dyn::@d0f5e8c1325556e9a2c1",
+			"targetIndex" : 34,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "share/behaviortree_cpp/bt_plugins",
+			"paths" : 
+			[
+				"sample_nodes/bin/libdummy_nodes_dyn.so"
+			],
+			"targetId" : "dummy_nodes_dyn::@d0f5e8c1325556e9a2c1",
+			"targetIndex" : 35,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "share/behaviortree_cpp/bt_plugins",
+			"paths" : 
+			[
+				"sample_nodes/bin/libmovebase_node_dyn.so"
+			],
+			"targetId" : "movebase_node_dyn::@d0f5e8c1325556e9a2c1",
+			"targetIndex" : 42,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "sample_nodes",
+		"source" : "sample_nodes"
+	}
+}
