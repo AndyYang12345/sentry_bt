@@ -14,6 +14,8 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 创建待办清单 (17bba6c)
+- 更新 CHANGELOG.md (1a63672)
 - 更新 CHANGELOG.md (bc30d19)
 - 添加对行为树的一点新理解 (5f7d96b)
 - 更新 CHANGELOG.md (323f1b1)
