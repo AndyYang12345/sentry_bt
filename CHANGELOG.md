@@ -13,6 +13,8 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 添加对行为树的一点新理解 (5f7d96b)
+- 更新 CHANGELOG.md (323f1b1)
 - 更新 CHANGELOG.md (7c0db20)
 - 更新 CHANGELOG.md (decf458)
 - 更新 CHANGELOG.md (ed419ff)
