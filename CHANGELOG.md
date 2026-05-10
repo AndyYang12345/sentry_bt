@@ -5,9 +5,11 @@
 ## [HEAD] - 2026-05-10
 
 ### ✨ 新功能 (Added)
+- 新建自定义接口包 (6c9ccec)
 - 修改CMakeLists,创建项目目录结构 (6484edb)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (a203cfe)
 - 更新 CHANGELOG.md (de19307)
 - 更新 CHANGELOG.md (1ef0b77)
 
