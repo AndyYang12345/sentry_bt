@@ -15,18 +15,22 @@ void run_basic_mode(const rclcpp::Node::SharedPtr& node)
     BT::BehaviorTreeFactory factory;
     
     // 2. 注册节点类型
-    factory.registerNodeType<SayMsg>("SayMsg");
-    factory.registerNodeType<CalculateSum>("CalculateSum");
-    factory.registerNodeType<IsGreaterThan>("IsGreaterThan");
+    // factory.registerNodeType<SayMsg>("SayMsg");
+    // factory.registerNodeType<CalculateSum>("CalculateSum");
+    // factory.registerNodeType<IsGreaterThan>("IsGreaterThan");
     
-    // 注册标准 Script 节点
-    // factory.registerNodeType<BT::ScriptNode>("Script");
     
     // 3. 创建黑板并设置共享数据
     auto blackboard = BT::Blackboard::create();
     blackboard->set("node", node);
-    blackboard->set<std::string>("greeting_message", "Hello from Blackboard!");
-    blackboard->set<int>("counter", 0);
+    blackboard->set("map_width",   node->get_parameter("map_width").as_double());
+    blackboard->set("map_length",  node->get_parameter("map_length").as_double());
+    blackboard->set("max_rotate_speed", node->get_parameter("max_rotate_speed").as_double());
+    blackboard->set("defence_hp_threshold", node->get_parameter("defence_hp_threshold").as_int());
+    blackboard->set("spin_low_speed",  node->get_parameter("spin_low_speed").as_double());
+    blackboard->set("spin_mid_speed",  node->get_parameter("spin_mid_speed").as_double());
+    blackboard->set("spin_high_speed", node->get_parameter("spin_high_speed").as_double());
+
     
     // 4. 从 XML 加载树
     std::string xml_path = "src/decision_process/xml/task_simple.xml";
@@ -50,6 +54,16 @@ int main(int argc, char** argv)
     
     auto node = rclcpp::Node::make_shared("decision_process_node");
     
+    // 参数声明
+    node->declare_parameter<float>("map_width", 15.0);
+    node->declare_parameter<float>("map_length", 28.0);
+    node->declare_parameter<float>("max_rotate_speed", 3.14);
+    node->declare_parameter<int>("defence_buff_threshold", 50);
+    node->declare_parameter<int>("enemy_hp_threshold", 50);
+    node->declare_parameter<float>("spin_low_speed", 1.0);
+    node->declare_parameter<float>("spin_mid_speed", 2.0);
+    node->declare_parameter<float>("spin_high_speed", 3.0);
+
     run_basic_mode(node);
     
     rclcpp::shutdown();

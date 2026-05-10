@@ -1,0 +1,11 @@
+# config/sentry_params.yaml
+sentry_node:
+  ros__parameters:
+    map_width: 15.0          # 地图宽度 (m)
+    map_length: 28.0          # 地图高度 (m)
+    max_rotate_speed: 3.14   # 最大旋转速度 (rad/s)
+    defence_buff_threshold: 50  # 防御增益低于此值转防御姿态
+    enemy_hp_threshold: 50   # 敌方血量低于此值优先补刀
+    spin_low_speed: 1.0      # 低速旋转速度 (rad/s)
+    spin_mid_speed: 2.0      # 中速旋转速度 (rad/s)
+    spin_high_speed: 3.0     # 高速旋转速度 (rad/s)
