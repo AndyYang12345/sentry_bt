@@ -9,7 +9,11 @@
 - 新建自定义接口包 (6c9ccec)
 - 修改CMakeLists,创建项目目录结构 (6484edb)
 
+### 🐛 Bug 修复 (Fixed)
+- 删去错误信息通信逻辑的动作节点 (151ba47)
+
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (decf458)
 - 更新 CHANGELOG.md (ed419ff)
 - 更新 CHANGELOG.md (6b45351)
 - 更新 CHANGELOG.md (a203cfe)
