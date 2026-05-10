@@ -77,23 +77,3 @@ public:
         return (value > threshold) ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
     }
 };
-
-
-// 异步动作节点改名叫TreadedAction了 涉及到ROS2动作服务器编写，等后面再试试
-// class AsyncWait: public ThreadedAction{
-// public:
-//     AsyncWait(const std::string& name, const NodeConfig& config)
-//         : ThreadedAction(name, config){}
-        
-//     static PortsList ProvidedPorts(){
-//         return {
-//             InputPort<int>("duration_ms", "等待的时间,单位毫秒"),
-//             OutputPort<int>("progress", "当前等待的进度,0-100")
-//         };
-//     }
-
-//     NodeStatus tick() override{
-//         while(running_)
-//     }
-// }
-

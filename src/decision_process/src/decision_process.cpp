@@ -11,8 +11,6 @@
 
 void run_basic_mode(const rclcpp::Node::SharedPtr& node)
 {
-    RCLCPP_INFO(node->get_logger(), "===== 基础模式启动 =====");
-    
     // 1. 创建行为树工厂
     BT::BehaviorTreeFactory factory;
     
