@@ -13,6 +13,7 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (7c0db20)
 - 更新 CHANGELOG.md (decf458)
 - 更新 CHANGELOG.md (ed419ff)
 - 更新 CHANGELOG.md (6b45351)
@@ -21,6 +22,7 @@
 - 更新 CHANGELOG.md (1ef0b77)
 
 ### 🔧 维护/构建 (Maintenance)
+- 删去多余注释、多余调试信息 (4a737de)
 - 修正README中的理解问题，理清通信原理 (065159e)
 - 更新README文档 (246d7bc)
 - 编写README.md (4244ead)
