@@ -4,7 +4,6 @@
 #include <behaviortree_cpp/loggers/bt_minitrace_logger.h>
 
 #include "decision_process/treenode/node_template.hpp"
-#include "decision_process/treenode/ros_bt_interface.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -21,7 +20,6 @@ void run_basic_mode(const rclcpp::Node::SharedPtr& node)
     factory.registerNodeType<SayMsg>("SayMsg");
     factory.registerNodeType<CalculateSum>("CalculateSum");
     factory.registerNodeType<IsGreaterThan>("IsGreaterThan");
-    factory.registerNodeType<RosSubscriberNode>("RosSubscriberNode");
     
     // 注册标准 Script 节点
     // factory.registerNodeType<BT::ScriptNode>("Script");
