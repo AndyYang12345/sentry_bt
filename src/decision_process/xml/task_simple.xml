@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4">
+    <TreeNodesModel>
+        <Action ID="SayMsg">
+            <input_port name="message" default="空">要打印的消息</input_port>
+        </Action>
+        <Action ID="CalculateSum">
+            <input_port name="a" default="0">第一个加数</input_port>
+            <input_port name="b" default="0">第二个加数</input_port>
+            <output_port name="sum">计算结果</output_port>
+        </Action>
+    </TreeNodesModel>
+    
+    <BehaviorTree ID="SimpleTree">
+        <Sequence name="main_sequence">
+            <SayMsg name="message" message="Hello, World!"/>
+            <SayMsg name="massage" message="{greeting_msg}"/>
+            <CalculateSum a="5" b="10" sum="{sum_result}"/>
+            <SayMsg name="sum" message="The sum is: {sum_result}"/>
+        </Sequence>
+    </BehaviorTree>
+</root>
