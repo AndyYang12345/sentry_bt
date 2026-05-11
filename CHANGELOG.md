@@ -1,10 +1,11 @@
 # Changelog
 
-## [Unreleased] - 2026-05-10
+## [Unreleased] - 2026-05-11
 
-## [HEAD] - 2026-05-10
+## [HEAD] - 2026-05-11
 
 ### ✨ 新功能 (Added)
+- 创建大致分类，初始化任务节点等 (fbc1d2e)
 - 创建配置文件，添加配置文件和参数入口，初始化并传入黑板 (a748728)
 - 创建所需自定义接口包 (4036f7a)
 - 新建自定义接口包 (6c9ccec)
@@ -14,6 +15,7 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (d8be1d7)
 - 创建待办清单 (17bba6c)
 - 更新 CHANGELOG.md (1a63672)
 - 更新 CHANGELOG.md (bc30d19)
