@@ -56,3 +56,33 @@ public:
         return NodeStatus::FAILURE;
     }
 };
+
+class CheckNotInvincible: public ConditionNode{
+public:
+    CheckNotInvincible(const std::string& name, const NodeConfig& config)
+        : ConditionNode(name, config){}
+    static PortsList providedPorts(){
+        return {
+            InputPort<std::vector<uint16_t>>("hp_enemy", "敌人血量"),
+            OutputPort<std::vector<uint16_t>>("invincible_enemy", "无敌敌人列表")
+        };
+    }
+
+    NodeStatus tick() override{
+        std::vector<uint16_t> hp_enemy;
+        if (getInput("hp_enemy", hp_enemy)){
+            if(hp_enemy.empty()){
+                return NodeStatus::FAILURE;
+            }
+            std::vector<uint16_t> invincible_enemy;
+            for (size_t i = 0; i < 5; ++i){
+                if(hp_enemy[i] == 1001){
+                    invincible_enemy.push_back(hp_enemy[i]);
+                }
+            }
+            setOutput("invincible_enemy", invincible_enemy);
+            return NodeStatus::SUCCESS;
+        }
+        return NodeStatus::FAILURE;
+    }
+};
