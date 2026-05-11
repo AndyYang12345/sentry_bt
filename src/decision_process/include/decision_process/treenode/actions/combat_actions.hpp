@@ -1,72 +1,96 @@
 #pragma once
 #include <behaviortree_cpp/bt_factory.h>
-#include <string>
-#include "decision_process/include/interfaces/interfaces.hpp"
+#include <cstdint>
+#include <vector>
+#include <limits>
 
-/*
-    @brief 战斗，爽！
-    @param 无
-    @return 成功：直接开火！！
-*/
 using namespace BT;
 
-class AttackEnemy: public SyncActionNode{
+// ============================================================
+// 战斗动作节点
+// ============================================================
+
+/*
+    @brief 综合筛选 + 选最优目标（仅限地面单位 1-5 号机器人）
+    @params 黑板读取:
+      target           (uint8_t[9]) — 自瞄可见性数组, target[1-5] 对应敌方1-5号机器人
+      hp_enemy         (uint16_t[8]) — 敌方血量数组
+      target_distance  (double[9])  — 目标距离数组
+      target_polar_angle (double[9]) — 目标极角数组
+    筛选条件: 可见(target[i]==1) 且 非无敌(hp!=1001) 仅限1-5号地面单位
+    选择策略: 距离最近(非零)
+    黑板写入:
+      target_id  (uint8_t) — 选定目标编号(1-5)
+      decide_yaw (float)   — 选定目标的极角, 传递给自瞄
+    @return SUCCESS 选中目标; FAILURE 无有效目标
+*/
+class SelectTarget : public SyncActionNode {
 public:
-    AttackEnemy(const std::string& name, const NodeConfig& config)
-        : SyncActionNode(name, config){}
-    static PortsList providedPorts(){
+    SelectTarget(const std::string& name, const NodeConfig& config)
+        : SyncActionNode(name, config) {}
+
+    static PortsList providedPorts() {
         return {
-            OutputPort<uint8_t>("shoot_mode", "设置开火状态")
+            InputPort<std::vector<uint8_t>>("target", "自瞄目标可见性数组"),
+            InputPort<std::vector<uint16_t>>("hp_enemy", "敌方血量数组"),
+            InputPort<std::vector<double>>("target_distance", "目标距离数组"),
+            InputPort<std::vector<double>>("target_polar_angle", "目标极角数组"),
+            OutputPort<uint8_t>("target_id", "选定的目标编号(1-5)"),
+            OutputPort<float>("decide_yaw", "选定目标的极角")
         };
     }
 
-    NodeStatus tick() override{
-        setOutput("shoot_mode", 1);
-        return NodeStatus::SUCCESS;
+    NodeStatus tick() override {
+        std::vector<uint8_t>  target;
+        std::vector<uint16_t> hp_enemy;
+        std::vector<double>   target_distance;
+        std::vector<double>   target_polar_angle;
+
+        if (!getInput("target", target) || target.size() < 9) return NodeStatus::FAILURE;
+        if (!getInput("hp_enemy", hp_enemy) || hp_enemy.size() < 8) return NodeStatus::FAILURE;
+        if (!getInput("target_distance", target_distance) || target_distance.size() < 9) return NodeStatus::FAILURE;
+        if (!getInput("target_polar_angle", target_polar_angle) || target_polar_angle.size() < 9) return NodeStatus::FAILURE;
+
+        int    best_id   = -1;
+        double best_dist = std::numeric_limits<double>::max();
+
+        // 仅遍历 1-5 号地面机器人
+        for (size_t i = 1; i <= 5; ++i) {
+            if (target[i] != 1) continue;                // 不在视野内
+            if (hp_enemy[i - 1] == 1001) continue;        // 无敌状态
+            if (target_distance[i] > 0 && target_distance[i] < best_dist) {
+                best_dist = target_distance[i];
+                best_id   = static_cast<int>(i);
+            }
+        }
+
+        if (best_id > 0) {
+            setOutput("target_id", static_cast<uint8_t>(best_id));
+            setOutput("decide_yaw", static_cast<float>(target_polar_angle[best_id]));
+            return NodeStatus::SUCCESS;
+        }
+        return NodeStatus::FAILURE;
     }
 };
 
 /*
-    @brief 选择目标
-    @param 模糊目标可见度，敌人可见度列表，无敌敌人列表
-    @return 根据是否无敌和是否可见二次筛选目标列表，成功：返回可选目标列表；失败：不存在可选目标
+    @brief 发送开火指令
+    黑板写入: shoot_mode = 1
+    @return SUCCESS
 */
-class SelectTarget: public SyncActionNode{
+class AttackEnemy : public SyncActionNode {
 public:
-    SelectTarget(const std::string& name, const NodeConfig& config)
-        : SyncActionNode(name, config){}
-    static PortsList providedPorts(){
-        return {
-            InputPort<bool>("blur_target", "是否存在模糊目标"),
-            InputPort<std::vector<bool>>("target_list", "敌人是否可见"),
-            InputPort<std::vector<bool>>("invincible_enemy_list", "无敌敌人列表"),
-            OutputPort<std::vector<bool>>("selected_targets_list", "设置可选中目标列表")
+    AttackEnemy(const std::string& name, const NodeConfig& config)
+        : SyncActionNode(name, config) {}
+
+    static PortsList providedPorts() {
+        return { 
+            OutputPort<uint8_t>("shoot_mode", "开火状态 0停火/1开火") 
         };
     }
 
-    NodeStatus tick() override{
-        bool blur_target;
-        std::vector<bool> target_list;
-        std::vector<bool> invincible_enemy_list;
-        std::vector<bool> selected_targets_list;
-        selected_targets_list.push_back(false); // 模糊目标不加入选定列表,强行对齐目标列表
-        if (getInput("blur_target", blur_target) && getInput("target_list", target_list) && getInput("invincible_enemy", invincible_enemy)){
-            if (blur_target){
-                // 模糊目标开火逻辑待定
-                return NodeStatus::SUCCESS;
-            }
-            for (size_t i = 1; i <= invincible_enemy_list.size(); ++i){
-                // target_list第一项是模糊目标，后续项对应具体敌人
-                if (target_list[i] && !invincible_enemy_list[i]){
-                    selected_targets_list.push_back(true);
-                    return NodeStatus::SUCCESS;
-                }else{
-                    selected_targets_list.push_back(false);
-                }
-            }
-            return NodeStatus::FAILURE;
-        }
-        setOutput("selected_targets_list", std::vector<bool>(target_list.size(), false));
-        return NodeStatus::FAILURE;
+    NodeStatus tick() override {
+        setOutput("shoot_mode", static_cast<uint8_t>(1));
+        return NodeStatus::SUCCESS;
     }
 };

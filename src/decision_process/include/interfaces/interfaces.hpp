@@ -5,5 +5,6 @@
 #include "sentry_interfaces/msg/decision_send_data.hpp"
 #include "sentry_interfaces/msg/autoaim_to_decision.hpp"
 #include "sentry_interfaces/msg/decision_to_autoaim.hpp"
-#include "geometry_msgs/msg/pose_stamped.hpp"
-#include "nav_msgs/msg/odometry.hpp"
+// 导航相关（需要时取消注释并添加 nav_msgs 依赖到 CMakeLists.txt）
+// #include "geometry_msgs/msg/pose_stamped.hpp"
+// #include "nav_msgs/msg/odometry.hpp"
