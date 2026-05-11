@@ -5,6 +5,7 @@
 ## [HEAD] - 2026-05-11
 
 ### ✨ 新功能 (Added)
+- 完成弹药判断节点 (e2a6026)
 - 完成开火动作节点 (c5bda10)
 - 创建汇总接口文件，在节点文件中引用 (16fb67c)
 - 创建大致分类，初始化任务节点等 (fbc1d2e)
@@ -17,6 +18,7 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (c82ec6d)
 - 更新 CHANGELOG.md (a0e1745)
 - 更新 CHANGELOG.md (f0fa4b5)
 - 更新 CHANGELOG.md (d8be1d7)
