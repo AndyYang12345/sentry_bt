@@ -5,6 +5,7 @@
 ## [HEAD] - 2026-05-11
 
 ### ✨ 新功能 (Added)
+- 完成无敌-可见二元目标审查 (697a571)
 - 完成敌人无敌判定 (e22898b)
 - 完成敌人可见度判断节点 (ed5ba08)
 - 完成弹药判断节点 (e2a6026)
@@ -20,6 +21,7 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (8f2c850)
 - 更新 CHANGELOG.md (cf38545)
 - 更新 CHANGELOG.md (ab17b35)
 - 更新 CHANGELOG.md (c82ec6d)
