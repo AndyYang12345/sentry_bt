@@ -15,3 +15,13 @@
 - [ ] 按照要求创建动作节点和基本判断节点，并且搭建一个简单的行为树来测试功能。
 - [ ] 构建行为树逻辑，确保树的结构合理，能够满足预期的决策流程。
 - [ ] 实现仿真
+
+```xml
+第一轮：基础移动                   第二轮：资源管理              第三轮：高级行为
+├── GoToPoint (通用导航)           ├── CheckLowHP              ├── Dodge (躲避)
+├── Patrol    (巡逻)                ├── GoHeal (回血)           ├── ChaseEnemy (追击)
+├── GoHome    (归位)               ├── CheckAmmoZero            ├── RadarChase (雷达联动追击)
+└── 姿态切换   (posture=1/2/3)     ├── GoGetAmmo (领弹)        ├── KeepDistance (自适应距离)
+                                   ├── 小陀螺 (spin_mode)       └── 残血目标选择
+                                   └── 云台   (tripod_mode)
+```
