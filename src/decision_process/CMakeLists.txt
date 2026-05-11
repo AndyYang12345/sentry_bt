@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sentry_interfaces REQUIRED)
 
 # 直接创建可执行文件
 add_executable(decision_process_main
@@ -29,6 +30,7 @@ ament_target_dependencies(decision_process_main
   behaviortree_cpp
   geometry_msgs
   std_msgs
+  sentry_interfaces
 )
 
 # 安装目标
