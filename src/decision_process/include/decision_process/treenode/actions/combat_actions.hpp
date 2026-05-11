@@ -38,35 +38,35 @@ public:
     static PortsList providedPorts(){
         return {
             InputPort<bool>("blur_target", "是否存在模糊目标"),
-            InputPort<std::vector<bool>>("target", "敌人是否可见"),
-            InputPort<std::vector<bool>>("invincible_enemy", "无敌敌人列表"),
-            OutputPort<std::vector<bool>>("selected_targets", "设置可选中目标列表")
+            InputPort<std::vector<bool>>("target_list", "敌人是否可见"),
+            InputPort<std::vector<bool>>("invincible_enemy_list", "无敌敌人列表"),
+            OutputPort<std::vector<bool>>("selected_targets_list", "设置可选中目标列表")
         };
     }
 
     NodeStatus tick() override{
         bool blur_target;
-        std::vector<bool> target;
-        std::vector<bool> invincible_enemy;
-        std::vector<bool> selected_targets;
-        selected_targets.push_back(false); // 模糊目标不加入选定列表,强行对齐目标列表
-        if (getInput("blur_target", blur_target) && getInput("target", target) && getInput("invincible_enemy", invincible_enemy)){
+        std::vector<bool> target_list;
+        std::vector<bool> invincible_enemy_list;
+        std::vector<bool> selected_targets_list;
+        selected_targets_list.push_back(false); // 模糊目标不加入选定列表,强行对齐目标列表
+        if (getInput("blur_target", blur_target) && getInput("target_list", target_list) && getInput("invincible_enemy", invincible_enemy)){
             if (blur_target){
                 // 模糊目标开火逻辑待定
                 return NodeStatus::SUCCESS;
             }
-            for (size_t i = 1; i <= invincible_enemy.size(); ++i){
-                // target第一项是模糊目标，后续项对应具体敌人
-                if (target[i] && !invincible_enemy[i]){
-                    selected_targets.push_back(true);
+            for (size_t i = 1; i <= invincible_enemy_list.size(); ++i){
+                // target_list第一项是模糊目标，后续项对应具体敌人
+                if (target_list[i] && !invincible_enemy_list[i]){
+                    selected_targets_list.push_back(true);
                     return NodeStatus::SUCCESS;
                 }else{
-                    selected_targets.push_back(false);
+                    selected_targets_list.push_back(false);
                 }
             }
             return NodeStatus::FAILURE;
         }
-        setOutput("selected_targets", std::vector<bool>(target.size(), false));
+        setOutput("selected_targets_list", std::vector<bool>(target_list.size(), false));
         return NodeStatus::FAILURE;
     }
 };
