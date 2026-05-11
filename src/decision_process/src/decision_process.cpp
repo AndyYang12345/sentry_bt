@@ -9,6 +9,29 @@
 #include <memory>
 #include <string>
 
+void node_init(const rclcpp::Node::SharedPtr& node)
+{
+    node->declare_parameter("map_width", 10.0);
+    node->declare_parameter("map_length", 10.0);
+    node->declare_parameter("max_rotate_speed", 1.0);
+    node->declare_parameter("defence_hp_threshold", 30);
+    node->declare_parameter("spin_low_speed", 0.5);
+    node->declare_parameter("spin_mid_speed", 1.0);
+    node->declare_parameter("spin_high_speed", 1.5);
+}
+
+void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedPtr& node)
+{
+    blackboard->set("node", node);
+    blackboard->set("map_width",   node->get_parameter("map_width").as_double());
+    blackboard->set("map_length",  node->get_parameter("map_length").as_double());
+    blackboard->set("max_rotate_speed", node->get_parameter("max_rotate_speed").as_double());
+    blackboard->set("defence_hp_threshold", node->get_parameter("defence_hp_threshold").as_int());
+    blackboard->set("spin_low_speed",  node->get_parameter("spin_low_speed").as_double());
+    blackboard->set("spin_mid_speed",  node->get_parameter("spin_mid_speed").as_double());
+    blackboard->set("spin_high_speed", node->get_parameter("spin_high_speed").as_double());
+}
+
 void run_basic_mode(const rclcpp::Node::SharedPtr& node)
 {
     // 1. 创建行为树工厂
@@ -21,15 +44,9 @@ void run_basic_mode(const rclcpp::Node::SharedPtr& node)
     
     
     // 3. 创建黑板并设置共享数据
+    node_init(node);
     auto blackboard = BT::Blackboard::create();
-    blackboard->set("node", node);
-    blackboard->set("map_width",   node->get_parameter("map_width").as_double());
-    blackboard->set("map_length",  node->get_parameter("map_length").as_double());
-    blackboard->set("max_rotate_speed", node->get_parameter("max_rotate_speed").as_double());
-    blackboard->set("defence_hp_threshold", node->get_parameter("defence_hp_threshold").as_int());
-    blackboard->set("spin_low_speed",  node->get_parameter("spin_low_speed").as_double());
-    blackboard->set("spin_mid_speed",  node->get_parameter("spin_mid_speed").as_double());
-    blackboard->set("spin_high_speed", node->get_parameter("spin_high_speed").as_double());
+    blackboard_init(blackboard, node);
 
     
     // 4. 从 XML 加载树
@@ -53,16 +70,6 @@ int main(int argc, char** argv)
     rclcpp::init(argc, argv);
     
     auto node = rclcpp::Node::make_shared("decision_process_node");
-    
-    // 参数声明
-    node->declare_parameter<float>("map_width", 15.0);
-    node->declare_parameter<float>("map_length", 28.0);
-    node->declare_parameter<float>("max_rotate_speed", 3.14);
-    node->declare_parameter<int>("defence_buff_threshold", 50);
-    node->declare_parameter<int>("enemy_hp_threshold", 50);
-    node->declare_parameter<float>("spin_low_speed", 1.0);
-    node->declare_parameter<float>("spin_mid_speed", 2.0);
-    node->declare_parameter<float>("spin_high_speed", 3.0);
 
     run_basic_mode(node);
     
