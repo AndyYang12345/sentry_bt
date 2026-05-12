@@ -10,6 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sentry_interfaces REQUIRED)
 
@@ -29,6 +30,7 @@ ament_target_dependencies(decision_process_main
   rclcpp
   behaviortree_cpp
   geometry_msgs
+  nav_msgs
   std_msgs
   sentry_interfaces
 )
