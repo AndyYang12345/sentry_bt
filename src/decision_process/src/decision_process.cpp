@@ -132,12 +132,22 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
             blackboard->set("target_polar_angle", msg->target_polar_angle);
         });
 
+    auto sub_nav = node->create_subscription<nav_msgs::msg::Odometry>(
+        "/state_estimation", 10,
+        [blackboard](nav_msgs::msg::Odometry::SharedPtr msg) {
+            blackboard->set("current_x", msg->pose.pose.position.x);
+            blackboard->set("current_y", msg->pose.pose.position.y);
+            // 这里假定无roll、pitch轴旋转，将w直接当作yaw的cos值，z当作sin值计算yaw角度
+            blackboard->set("current_yaw", std::atan2(
+                msg->pose.pose.orientation.z, msg->pose.pose.orientation.w) * 2.0);
+        });
     // 5. 设置发布 (从黑板读取)
     auto pub_send    = node->create_publisher<DecisionSendData>("/serial_send_data", 10);
     auto pub_autoaim = node->create_publisher<DecisionToAutoaim>("/decision_to_autoaim", 10);
+    auto pub_nav     = node->create_publisher<geometry_msgs::msg::PoseStamped>("/goal_pose", 10);
 
     // 6. 加载行为树
-    std::string xml_path = "src/decision_process/xml/task_simple.xml";
+    std::string xml_path = "src/decision_process/xml/main.xml";
     auto tree = factory.createTreeFromFile(xml_path, blackboard);
 
     // 7. 主循环
@@ -173,6 +183,26 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
             msg.color     = (color == 0) ? static_cast<uint8_t>(0) : static_cast<uint8_t>(2);
 
             pub_autoaim->publish(msg);
+        }
+
+        {
+            geometry_msgs::msg::PoseStamped msg;
+            double nav_target_x = 0.0;
+            double nav_target_y = 0.0;
+            bool nav_cancel = false;
+            (void)blackboard->get("nav_target_x", nav_target_x);
+            (void)blackboard->get("nav_target_y", nav_target_y);
+            (void)blackboard->get("nav_cancel",   nav_cancel);
+
+            if (!nav_cancel) {
+                msg.header.stamp = node->now();
+                msg.header.frame_id = "map";
+                msg.pose.position.x = nav_target_x;
+                msg.pose.position.y = nav_target_y;
+                msg.pose.position.z = 1.0;
+
+                pub_nav->publish(msg);
+            }
         }
 
         rate.sleep();
