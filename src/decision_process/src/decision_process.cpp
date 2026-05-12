@@ -4,7 +4,9 @@
 
 #include "decision_process/treenode/node_template.hpp"
 #include "decision_process/treenode/conditions/combat_conditions.hpp"
+#include "decision_process/treenode/conditions/movement_conditions.hpp"
 #include "decision_process/treenode/actions/combat_actions.hpp"
+#include "decision_process/treenode/stateful/navigation_tasks.hpp"
 #include "interfaces/interfaces.hpp"
 
 #include <memory>
@@ -74,6 +76,11 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     // --- /decision_to_autoaim ---
     blackboard->set("target_id",       static_cast<uint8_t>(0));
     blackboard->set("decide_yaw",      0.0f);
+
+    // --- 导航状态 ---
+    blackboard->set("nav_target_x", 0.0);
+    blackboard->set("nav_target_y", 0.0);
+    blackboard->set("nav_cancel",   false);
 }
 
 // ============================================================
@@ -91,6 +98,12 @@ void run_basic_mode(const rclcpp::Node::SharedPtr& node)
     factory.registerNodeType<CheckEnemyVisible>("CheckEnemyVisible");
     factory.registerNodeType<SelectTarget>("SelectTarget");
     factory.registerNodeType<AttackEnemy>("AttackEnemy");
+    factory.registerNodeType<CheckArrived>("CheckArrived");
+    factory.registerNodeType<GoToPoint>("GoToPoint");
+    factory.registerNodeType<Patrol>("Patrol");
+    factory.registerNodeType<Dodge>("Dodge");
+    factory.registerNodeType<ChaseEnemy>("ChaseEnemy");
+    factory.registerNodeType<KeepDistance>("KeepDistance");
 
     // 3. 创建黑板并初始化
     node_init(node);
