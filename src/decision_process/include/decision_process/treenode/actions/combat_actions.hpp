@@ -11,17 +11,17 @@ using namespace BT;
 // ============================================================
 
 /*
-    @brief 综合筛选 + 选最优目标（仅限地面单位 1-5 号机器人）
-    @params 黑板读取:
-      target           (uint8_t[9]) — 自瞄可见性数组, target[1-5] 对应敌方1-5号机器人
-      hp_enemy         (uint16_t[8]) — 敌方血量数组
-      target_distance  (double[9])  — 目标距离数组
-      target_polar_angle (double[9]) — 目标极角数组
-    筛选条件: 可见(target[i]==1) 且 非无敌(hp!=1001) 仅限1-5号地面单位
-    选择策略: 距离最近(非零)
+    @brief 综合筛选 + 选最优目标（1-8号单位均考虑）
+    @params 黑板读取 (均来自订阅回调更新):
+      target          (uint8_t[9])  — 自瞄可见性, target[0]=模糊, target[1-8]=敌方1-8号
+      hp_enemy        (uint16_t[8]) — 敌方血量, [0-4]=地面1-5号, [5]=前哨站, [6]=基地, [7]=8号
+      target_distance (double[9])   — 目标距离
+      target_polar_angle (double[9])— 目标极角
+    筛选条件: 可见(target[i]==1) 且 (非无敌(hp!=1001) 或 建筑未摧毁(hp!=0))
+    选择策略: 距离最近(>0)
     黑板写入:
-      target_id  (uint8_t) — 选定目标编号(1-5)
-      decide_yaw (float)   — 选定目标的极角, 传递给自瞄
+      target_id  (uint8_t) — 选定目标编号(1-8)
+      decide_yaw (float)   — 选定目标的极角值, 用于自瞄
     @return SUCCESS 选中目标; FAILURE 无有效目标
 */
 class SelectTarget : public SyncActionNode {
@@ -35,14 +35,12 @@ public:
             InputPort<std::vector<uint16_t>>("hp_enemy", "敌方血量数组"),
             InputPort<std::vector<double>>("target_distance", "目标距离数组"),
             InputPort<std::vector<double>>("target_polar_angle", "目标极角数组"),
-            OutputPort<uint8_t>("target_id", "选定的目标编号(1-5)"),
-            OutputPort<float>("decide_yaw", "选定目标的极角")
+            OutputPort<uint8_t>("target_id", "选定的目标编号(1-8)"),
+            OutputPort<float>("decide_yaw", "选定目标的极角, 传给自瞄模块")
         };
     }
 
     NodeStatus tick() override {
-        // 这边想了一下，追击目标还是得从自瞄确定单位才能开始追击，所以目标选择还是保留当前算法，
-        // 但是我还是想实现自动追踪全局最近的单位，这意味着我还需要加一个自动扫描、云台控制节点
         std::vector<uint8_t>  target;
         std::vector<uint16_t> hp_enemy;
         std::vector<double>   target_distance;
@@ -56,10 +54,22 @@ public:
         int    best_id   = -1;
         double best_dist = std::numeric_limits<double>::max();
 
-        // 仅遍历 1-5 号地面机器人
-        for (size_t i = 1; i <= 5; ++i) {
-            if (target[i] != 1) continue;                // 不在视野内
-            if (hp_enemy[i - 1] == 1001) continue;        // 无敌状态
+        for (size_t i = 1; i <= 8; ++i) {
+            // 1) 自瞄可见
+            if (target[i] != 1) continue;
+
+            // 2) hp_enemy[i-1] 对应的血量
+            uint16_t hp = hp_enemy[i - 1];
+
+            // 前哨站(6号,idx=5) / 基地(7号,idx=6) 只要 hp>0 即可打
+            if (i == 6 || i == 7) {
+                if (hp == 0) continue;                // 建筑已摧毁
+            } else {
+                if (hp == 1001) continue;              // 地面单位无敌
+                if (hp == 0)    continue;              // 已摧毁
+            }
+
+            // 3) 距离有效且最近
             if (target_distance[i] > 0 && target_distance[i] < best_dist) {
                 best_dist = target_distance[i];
                 best_id   = static_cast<int>(i);
@@ -86,9 +96,7 @@ public:
         : SyncActionNode(name, config) {}
 
     static PortsList providedPorts() {
-        return { 
-            OutputPort<uint8_t>("shoot_mode", "开火状态 0停火/1开火") 
-        };
+        return { OutputPort<uint8_t>("shoot_mode", "开火状态 0停火/1开火") };
     }
 
     NodeStatus tick() override {

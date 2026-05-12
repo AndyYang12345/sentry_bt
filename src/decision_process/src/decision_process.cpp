@@ -20,9 +20,9 @@
 void node_init(const rclcpp::Node::SharedPtr& node)
 {
     // --- map_params.yaml ---
-    node->declare_parameter("map_width",      15.0);
-    node->declare_parameter("map_height",      8.0);
-    node->declare_parameter("xy_tolerance",    0.2);
+    node->declare_parameter("map_width",       15.0);
+    node->declare_parameter("map_length",      28.0);
+    node->declare_parameter("xy_tolerance",     0.2);
 
     // --- movement_params.yaml ---
     node->declare_parameter("max_rotate_speed", 3.14);
@@ -60,7 +60,7 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     // 地图 & 导航参数 (map_params.yaml)
     // ============================================================
     blackboard->set("map_width",      node->get_parameter("map_width").as_double());
-    blackboard->set("map_height",     node->get_parameter("map_height").as_double());
+    blackboard->set("map_height",     node->get_parameter("map_length").as_double());
     blackboard->set("XY_TOLERANCE",   node->get_parameter("xy_tolerance").as_double());
     blackboard->set("xy_tolerance",   node->get_parameter("xy_tolerance").as_double());
 
@@ -143,12 +143,12 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
     // 2. 注册节点类型
     factory.registerNodeType<CheckAmmo>("CheckAmmo");
     factory.registerNodeType<CheckEnemyVisible>("CheckEnemyVisible");
+    factory.registerNodeType<CheckDamage>("CheckDamage");
     factory.registerNodeType<SelectTarget>("SelectTarget");
     factory.registerNodeType<AttackEnemy>("AttackEnemy");
     factory.registerNodeType<CheckArrived>("CheckArrived");
     factory.registerNodeType<GoToPoint>("GoToPoint");
     factory.registerNodeType<Patrol>("Patrol");
-    factory.registerNodeType<CheckDamage>("CheckDamage");
     factory.registerNodeType<Dodge>("Dodge");
     factory.registerNodeType<ChaseEnemy>("ChaseEnemy");
     factory.registerNodeType<CalculateSafePosition>("CalculateSafePosition");

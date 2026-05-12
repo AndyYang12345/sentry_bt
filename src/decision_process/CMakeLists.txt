@@ -51,4 +51,33 @@ install(DIRECTORY config/
   DESTINATION share/${PROJECT_NAME}/config
 )
 
+# ============================================================
+# 调试工具 — SentryCostmap 可视化测试 (需要 Qt5)
+# ============================================================
+option(BUILD_COSTMAP_TEST "Build costmap visual test tool" OFF)
+
+if(BUILD_COSTMAP_TEST)
+  find_package(Qt5 REQUIRED COMPONENTS Widgets)
+
+  set(CMAKE_AUTOMOC ON)
+  set(CMAKE_AUTORCC ON)
+
+  add_executable(test_costmap
+    src/debug/test_custom_costmap.cpp
+  )
+
+  target_include_directories(test_costmap PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  )
+
+  target_link_libraries(test_costmap
+    Qt5::Widgets
+  )
+
+  # Qt app 独立安装 (非 ROS 节点)
+  install(TARGETS test_costmap
+    DESTINATION lib/${PROJECT_NAME}/debug
+  )
+endif()
+
 ament_package()
