@@ -26,7 +26,7 @@ public:
         return {
             BT::InputPort<double>("current_x",    "当前X坐标"),
             BT::InputPort<double>("current_y",    "当前Y坐标"),
-            BT::InputPort<double>("xy_tolerance", "到达容差(m)"),
+            BT::InputPort<double>("XY_TOLERANCE", "到达容差(m)"),
             BT::InputPort<double>("nav_target_x", "导航目标X"),
             BT::InputPort<double>("nav_target_y", "导航目标Y"),
             BT::OutputPort<bool>("nav_cancel", "取消导航"),
@@ -38,7 +38,7 @@ public:
         if (!getInput("nav_target_x", nav_target_x_) || !getInput("nav_target_y", nav_target_y_))
             return BT::NodeStatus::FAILURE;
         double tol = 0.2;
-        getInput("xy_tolerance", tol);
+        getInput("XY_TOLERANCE", tol);
         tolerance_ = tol;
         return BT::NodeStatus::RUNNING;
     }

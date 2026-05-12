@@ -14,34 +14,70 @@
 #include <vector>
 
 // ============================================================
-// ROS 2 参数声明
+// ROS 2 参数声明 (对应 config/ 下各 yaml 文件)
 // ============================================================
 void node_init(const rclcpp::Node::SharedPtr& node)
 {
-    // 地图
-    node->declare_parameter("map_width", 10.0);
-    node->declare_parameter("map_height", 8.0);
-    // 运动控制
-    node->declare_parameter("max_rotate_speed", 1.0);
-    node->declare_parameter("spin_low_speed",  0.5);
-    node->declare_parameter("spin_mid_speed",  1.0);
-    node->declare_parameter("spin_high_speed", 1.5);
-    // 战斗
+    // --- map_params.yaml ---
+    node->declare_parameter("map_width",      15.0);
+    node->declare_parameter("map_height",      8.0);
+    node->declare_parameter("xy_tolerance",    0.2);
+
+    // --- movement_params.yaml ---
+    node->declare_parameter("max_rotate_speed", 3.14);
+    node->declare_parameter("spin_low_speed",   1.0);
+    node->declare_parameter("spin_mid_speed",   2.0);
+    node->declare_parameter("spin_high_speed",  3.0);
+
+    // --- combat_params.yaml ---
+    node->declare_parameter("ammo_threshold",       0);
     node->declare_parameter("defence_hp_threshold", 160);
-    node->declare_parameter("ammo_threshold", 0);
+    node->declare_parameter("dodge_radius",          2.0);
+    node->declare_parameter("min_dist",              1.2);
+    node->declare_parameter("max_dist",              4.0);
+    node->declare_parameter("close_to",              2.8);
+    node->declare_parameter("back_to",               1.8);
+
+    // --- decision_params.yaml ---
+    node->declare_parameter("default_posture",         3);
+    node->declare_parameter("default_confirm_respawn", 0);
+    node->declare_parameter("default_tripod_mode",     0);
+    node->declare_parameter("default_spin_mode",       0);
+    node->declare_parameter("default_shoot_mode",      0);
+    node->declare_parameter("default_target_id",       0);
+    node->declare_parameter("default_decide_yaw",      0.0);
 }
 // ...existing code...
 void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedPtr& node)
 {
     blackboard->set("node", node);
-    blackboard->set("map_width",          node->get_parameter("map_width").as_double());
-    blackboard->set("map_height",         node->get_parameter("map_height").as_double());
-    blackboard->set("max_rotate_speed",   node->get_parameter("max_rotate_speed").as_double());
-    blackboard->set("spin_low_speed",     node->get_parameter("spin_low_speed").as_double());
-    blackboard->set("spin_mid_speed",     node->get_parameter("spin_mid_speed").as_double());
-    blackboard->set("spin_high_speed",    node->get_parameter("spin_high_speed").as_double());
-    blackboard->set("defence_hp_threshold", node->get_parameter("defence_hp_threshold").as_int());
-    blackboard->set("ammo_threshold",     node->get_parameter("ammo_threshold").as_int());
+
+    // ============================================================
+    // 地图 & 导航参数 (map_params.yaml)
+    // ============================================================
+    blackboard->set("map_width",      node->get_parameter("map_width").as_double());
+    blackboard->set("map_height",     node->get_parameter("map_height").as_double());
+    blackboard->set("XY_TOLERANCE",   node->get_parameter("xy_tolerance").as_double());
+    blackboard->set("xy_tolerance",   node->get_parameter("xy_tolerance").as_double());
+
+    // ============================================================
+    // 运动控制参数 (movement_params.yaml)
+    // ============================================================
+    blackboard->set("max_rotate_speed", node->get_parameter("max_rotate_speed").as_double());
+    blackboard->set("spin_low_speed",   node->get_parameter("spin_low_speed").as_double());
+    blackboard->set("spin_mid_speed",   node->get_parameter("spin_mid_speed").as_double());
+    blackboard->set("spin_high_speed",  node->get_parameter("spin_high_speed").as_double());
+
+    // ============================================================
+    // 战斗参数 (combat_params.yaml)
+    // ============================================================
+    blackboard->set("ammo_threshold",        node->get_parameter("ammo_threshold").as_int());
+    blackboard->set("defence_hp_threshold",  node->get_parameter("defence_hp_threshold").as_int());
+    blackboard->set("dodge_radius",          node->get_parameter("dodge_radius").as_double());
+    blackboard->set("min_dist",              node->get_parameter("min_dist").as_double());
+    blackboard->set("max_dist",              node->get_parameter("max_dist").as_double());
+    blackboard->set("close_to",              node->get_parameter("close_to").as_double());
+    blackboard->set("back_to",               node->get_parameter("back_to").as_double());
 
     // ============================================================
     // 话题数据初始值 (后续由订阅回调实时更新)
@@ -65,22 +101,32 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     blackboard->set("target_polar_angle",std::vector<double>(9, 0.0));
 
     // ============================================================
-    // BT 决策产出 (默认值)
+    // BT 决策产出 (默认值, 来自 decision_params.yaml)
     // ============================================================
     // --- /serial_send_data ---
-    blackboard->set("posture",         static_cast<uint8_t>(3));  // 默认移动姿态
-    blackboard->set("confirm_respawn", static_cast<uint8_t>(0));
-    blackboard->set("tripod_mode",     static_cast<uint8_t>(0));
-    blackboard->set("spin_mode",       static_cast<uint8_t>(0));
-    blackboard->set("shoot_mode",      static_cast<uint8_t>(0));
+    blackboard->set("posture",         static_cast<uint8_t>(node->get_parameter("default_posture").as_int()));
+    blackboard->set("confirm_respawn", static_cast<uint8_t>(node->get_parameter("default_confirm_respawn").as_int()));
+    blackboard->set("tripod_mode",     static_cast<uint8_t>(node->get_parameter("default_tripod_mode").as_int()));
+    blackboard->set("spin_mode",       static_cast<uint8_t>(node->get_parameter("default_spin_mode").as_int()));
+    blackboard->set("shoot_mode",      static_cast<uint8_t>(node->get_parameter("default_shoot_mode").as_int()));
     // --- /decision_to_autoaim ---
-    blackboard->set("target_id",       static_cast<uint8_t>(0));
-    blackboard->set("decide_yaw",      0.0f);
+    blackboard->set("target_id",       static_cast<uint8_t>(node->get_parameter("default_target_id").as_int()));
+    blackboard->set("decide_yaw",      node->get_parameter("default_decide_yaw").as_double());
 
-    // --- 导航状态 ---
+    // ============================================================
+    // 导航状态
+    // ============================================================
     blackboard->set("nav_target_x", 0.0);
     blackboard->set("nav_target_y", 0.0);
     blackboard->set("nav_cancel",   false);
+
+    // --- CheckArrived 目标点初始值 (运行中由 Patrol/GoToPoint 写入 nav_target_x/y 后在 XML 端口映射同步) ---
+    blackboard->set("target_x", 0.0);
+    blackboard->set("target_y", 0.0);
+
+    // --- 巡逻点位 (空列表占位, 实际值建议在 XML 的 TreeNodesModel 中设定, 或由外部订阅写入) ---
+    blackboard->set("patrol_points_x", std::vector<double>{});
+    blackboard->set("patrol_points_y", std::vector<double>{});
 }
 
 // 运行节点
