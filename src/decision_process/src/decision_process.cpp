@@ -6,6 +6,7 @@
 #include "decision_process/treenode/conditions/combat_conditions.hpp"
 #include "decision_process/treenode/conditions/movement_conditions.hpp"
 #include "decision_process/treenode/actions/combat_actions.hpp"
+#include "decision_process/treenode/actions/dodge_actions.hpp"
 #include "decision_process/treenode/stateful/navigation_tasks.hpp"
 #include "interfaces/interfaces.hpp"
 
@@ -32,7 +33,10 @@ void node_init(const rclcpp::Node::SharedPtr& node)
     // --- combat_params.yaml ---
     node->declare_parameter("ammo_threshold",       0);
     node->declare_parameter("defence_hp_threshold", 160);
-    node->declare_parameter("dodge_radius",          2.0);
+    node->declare_parameter("dodge_duration",        3.0);
+    node->declare_parameter("use_dynamic_dodge",     false);
+    node->declare_parameter("safe_points_x",        std::vector<double>{7.0, 12.0, 7.0, 12.0});
+    node->declare_parameter("safe_points_y",        std::vector<double>{3.0, 3.0, 5.0, 5.0});
     node->declare_parameter("min_dist",              1.2);
     node->declare_parameter("max_dist",              4.0);
     node->declare_parameter("close_to",              2.8);
@@ -73,7 +77,10 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     // ============================================================
     blackboard->set("ammo_threshold",        node->get_parameter("ammo_threshold").as_int());
     blackboard->set("defence_hp_threshold",  node->get_parameter("defence_hp_threshold").as_int());
-    blackboard->set("dodge_radius",          node->get_parameter("dodge_radius").as_double());
+    blackboard->set("dodge_duration",        node->get_parameter("dodge_duration").as_double());
+    blackboard->set("use_dynamic_dodge",     node->get_parameter("use_dynamic_dodge").as_bool());
+    blackboard->set("safe_points_x",         node->get_parameter("safe_points_x").as_double_array());
+    blackboard->set("safe_points_y",         node->get_parameter("safe_points_y").as_double_array());
     blackboard->set("min_dist",              node->get_parameter("min_dist").as_double());
     blackboard->set("max_dist",              node->get_parameter("max_dist").as_double());
     blackboard->set("close_to",              node->get_parameter("close_to").as_double());
@@ -141,8 +148,10 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
     factory.registerNodeType<CheckArrived>("CheckArrived");
     factory.registerNodeType<GoToPoint>("GoToPoint");
     factory.registerNodeType<Patrol>("Patrol");
+    factory.registerNodeType<CheckDamage>("CheckDamage");
     factory.registerNodeType<Dodge>("Dodge");
     factory.registerNodeType<ChaseEnemy>("ChaseEnemy");
+    factory.registerNodeType<CalculateSafePosition>("CalculateSafePosition");
 
     // 3. 创建黑板并初始化
     node_init(node);

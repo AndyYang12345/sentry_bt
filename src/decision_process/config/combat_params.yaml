@@ -11,7 +11,10 @@ decision_process_node:
     defence_hp_threshold: 160 # 血量低于此值转防御姿态
 
     # ---------- 躲避 ----------
-    dodge_radius: 2.0         # 随机躲避半径 (m)
+    use_dynamic_dodge: false    # false=使用预设安全点 true=使用动态计算安全点
+    dodge_duration: 3.0         # 单次躲避持续时长 (s)
+    safe_points_x: [7.0, 12.0, 7.0, 12.0]   # 静态安全点X坐标列表 (use_dynamic_dodge=false时生效)
+    safe_points_y: [3.0, 3.0, 5.0, 5.0]     # 静态安全点Y坐标列表
 
     # ---------- 追击距离控制 ----------
     min_dist: 1.2             # 后退阈值 — 距离小于此值后退 (m)

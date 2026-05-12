@@ -139,22 +139,25 @@ private:
     float xy_tolerance_ = 0.2;
 };
 
-// ---------- ③ Dodge: 躲避（受伤害时随机移动）----------
+// ---------- ③ Dodge: 躲避（预设安全点 / 动态安全点，通过 flag 切换）----------
 
 /*
-    @brief 受伤且无敌方视野时，随机移动以躲避攻击
-    生成随机目标点（在当前点附近或预设安全点），持续移动
-    每次到达后再随机新点，直到伤害解除（由外部条件打断）
-    @return RUNNING 永久循环
+    @brief 受伤且无敌方视野时，循环移动至安全点以躲避攻击
+    黑板读取: safe_points_x, safe_points_y (vector<double>) — 安全点位坐标列表
+    黑板读取: use_dynamic_dodge (bool, 默认false) — 若为 true，安全点由 CalculateSafePosition 动态生成
+    每到达一个点后切到下一个，到末尾回绕
+    @return RUNNING 永久循环（被高优先级打断才退出）
 */
 class Dodge : public BT::StatefulActionNode {
 public:
     Dodge(const std::string& name, const BT::NodeConfig& config)
-        : StatefulActionNode(name, config), gen_(rd_()) {}
+        : StatefulActionNode(name, config) {}
 
     static BT::PortsList providedPorts() {
         return {
-            BT::InputPort<double>("dodge_radius", "随机躲避半径(m), 默认2.0"),
+            BT::InputPort<std::vector<double>>("safe_points_x", "躲避安全点X坐标列表"),
+            BT::InputPort<std::vector<double>>("safe_points_y", "躲避安全点Y坐标列表"),
+            BT::InputPort<bool>("use_dynamic_dodge", "是否启用动态安全点计算, 默认false"),
             BT::InputPort<double>("current_x", "当前X坐标"),
             BT::InputPort<double>("current_y", "当前Y坐标"),
             BT::InputPort<double>("XY_TOLERANCE", "到达容差(m), 默认0.2"),
@@ -165,22 +168,46 @@ public:
     }
 
     BT::NodeStatus onStart() override {
-        double radius = 2.0;
-        getInput("dodge_radius", radius);
-        radius_ = radius;
-        pickNewTarget();
+        std::vector<double> sx, sy;
+        if (!getInput("safe_points_x", sx) || !getInput("safe_points_y", sy))
+            return BT::NodeStatus::FAILURE;
+
+        // re-read every tick if dynamic mode is on
+        getInput("use_dynamic_dodge", use_dynamic_);
+
+        if (sx.empty() || sx.size() != sy.size())
+            return BT::NodeStatus::FAILURE;
+        safe_x_ = sx;
+        safe_y_ = sy;
+        current_idx_ = 0;
+        publishTarget();
         getInput("XY_TOLERANCE", xy_tolerance_);
         return BT::NodeStatus::RUNNING;
     }
 
     BT::NodeStatus onRunning() override {
         double cx = 0, cy = 0;
-        if(!getInput("current_x", cx) || !getInput("current_y", cy)){
+        if (!getInput("current_x", cx) || !getInput("current_y", cy))
             return BT::NodeStatus::FAILURE;
+
+        // 动态模式: 每 tick 重新读取安全点（由 CalculateSafePosition 实时更新）
+        if (use_dynamic_) {
+            std::vector<double> sx, sy;
+            if (!getInput("safe_points_x", sx) || !getInput("safe_points_y", sy))
+                return BT::NodeStatus::FAILURE;
+            if (!sx.empty() && sx.size() == sy.size()) {
+                safe_x_ = sx;
+                safe_y_ = sy;
+                current_idx_ = 0;  // 重新开始遍历
+            }
         }
 
-        if (std::hypot(cx - dodge_x_, cy - dodge_y_) < xy_tolerance_) {
-            pickNewTarget();  // 到了，随机下一个点
+        double tx = safe_x_[current_idx_];
+        double ty = safe_y_[current_idx_];
+
+        if (std::hypot(cx - tx, cy - ty) < xy_tolerance_) {
+            current_idx_ = (current_idx_ + 1) % safe_x_.size();
+            publishTarget();
         }
         return BT::NodeStatus::RUNNING;
     }
@@ -190,24 +217,14 @@ public:
     }
 
 private:
-    // 随机生成一个新目标点，基于当前坐标加随机偏移
-    void pickNewTarget() {
-        double cx = 0, cy = 0;
-        if (!getInput("current_x", cx) || !getInput("current_y", cy)){
-            return;
-        }
-        std::uniform_real_distribution<> dist(-radius_, radius_);
-        dodge_x_ = cx + dist(gen_);
-        dodge_y_ = cy + dist(gen_);
-
-        setOutput("nav_target_x", dodge_x_);
-        setOutput("nav_target_y", dodge_y_);
+    void publishTarget() {
+        setOutput("nav_target_x", safe_x_[current_idx_]);
+        setOutput("nav_target_y", safe_y_[current_idx_]);
     }
-
-    double dodge_x_ = 0, dodge_y_ = 0, radius_ = 2.0;
-    std::random_device rd_;
+    std::vector<double> safe_x_, safe_y_;
+    size_t current_idx_ = 0;
     float xy_tolerance_ = 0.2;
-    std::mt19937 gen_;
+    bool use_dynamic_ = false;
 };
 
 // ---------- ④ ChaseEnemy: 追击 + 自适应距离 ----------
