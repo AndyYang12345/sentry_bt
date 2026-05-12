@@ -1,0 +1,16 @@
+# ============================================================
+# 决策默认值 (BT 产出初始值)
+# ============================================================
+decision_process_node:
+  ros__parameters:
+
+    # ---------- /serial_send_data 默认值 ----------
+    default_posture: 3        # 姿态: 1进攻/2防御/3移动
+    default_confirm_respawn: 0 # 自主复活: 0否/1是
+    default_tripod_mode: 0    # 旋转云台: 0否/1是
+    default_spin_mode: 0      # 底盘小陀螺: 0否/1低/2中/3高
+    default_shoot_mode: 0     # 射击: 0停火/1开火
+
+    # ---------- /decision_to_autoaim 默认值 ----------
+    default_target_id: 0      # 目标编号 (0=无目标, 1-8对应敌方单位)
+    default_decide_yaw: 0.0   # Yaw角 (rad)

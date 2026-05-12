@@ -46,4 +46,9 @@ install(DIRECTORY xml/
   DESTINATION share/${PROJECT_NAME}/xml
 )
 
+# 安装 YAML 配置文件
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
+
 ament_package()
