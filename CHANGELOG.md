@@ -33,6 +33,8 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新README (21d474c)
+- 更新 CHANGELOG.md (2e4211b)
 - 更新 CHANGELOG.md (ff44f18)
 - 更新 CHANGELOG.md (9e1cbc5)
 - 更新 CHANGELOG.md (084c822)
