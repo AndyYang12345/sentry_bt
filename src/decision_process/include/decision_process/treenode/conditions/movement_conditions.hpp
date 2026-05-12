@@ -20,8 +20,8 @@ public:
 
     static BT::PortsList providedPorts() {
         return {
-            BT::InputPort<double>("target_x",    "目标X坐标"),
-            BT::InputPort<double>("target_y",    "目标Y坐标"),
+            BT::InputPort<double>("nav_target_x",    "目标X坐标"),
+            BT::InputPort<double>("nav_target_y",    "目标Y坐标"),
             BT::InputPort<double>("current_x",   "当前X坐标"),
             BT::InputPort<double>("current_y",   "当前Y坐标"),
             BT::InputPort<double>("XY_TOLERANCE", "到达容差(m), 默认0.2"),
@@ -30,7 +30,7 @@ public:
 
     BT::NodeStatus tick() override {
         double tx, ty, cx, cy, tol;
-        if (!getInput("target_x", tx) || !getInput("target_y", ty))
+        if (!getInput("nav_target_x", tx) || !getInput("nav_target_y", ty))
             return BT::NodeStatus::FAILURE;
         if (!getInput("current_x", cx) || !getInput("current_y", cy))
             return BT::NodeStatus::FAILURE;

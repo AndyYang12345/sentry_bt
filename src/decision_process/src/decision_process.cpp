@@ -120,10 +120,6 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     blackboard->set("nav_target_y", 0.0);
     blackboard->set("nav_cancel",   false);
 
-    // --- CheckArrived 目标点初始值 (运行中由 Patrol/GoToPoint 写入 nav_target_x/y 后在 XML 端口映射同步) ---
-    blackboard->set("target_x", 0.0);
-    blackboard->set("target_y", 0.0);
-
     // --- 巡逻点位 (空列表占位, 实际值建议在 XML 的 TreeNodesModel 中设定, 或由外部订阅写入) ---
     blackboard->set("patrol_points_x", std::vector<double>{});
     blackboard->set("patrol_points_y", std::vector<double>{});
