@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased] - 2026-05-12
+## [Unreleased] - 2026-05-13
 
-## [HEAD] - 2026-05-12
+## [HEAD] - 2026-05-13
 
 ### ✨ 新功能 (Added)
 - 新增进入躲避模式的判定节点和高级安全位置计算的接口（暂未实现），接入已有逻辑，用flag切换模式 (928d539)
@@ -25,6 +25,7 @@
 - 修改CMakeLists,创建项目目录结构 (6484edb)
 
 ### 🐛 Bug 修复 (Fixed)
+- 修正头文件路径问题 (628b3ac)
 - 修正黑板键名taget和nav_target冗余 (253bd62)
 - 修正黑板键名错误问题 (7f5d6b8)
 - 修正信息接口依赖 (c2e1a81)
@@ -32,6 +33,7 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (ff44f18)
 - 更新 CHANGELOG.md (9e1cbc5)
 - 更新 CHANGELOG.md (084c822)
 - 更新 CHANGELOG.md (798425d)
