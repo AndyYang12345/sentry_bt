@@ -5,6 +5,7 @@
 ## [HEAD] - 2026-05-12
 
 ### ✨ 新功能 (Added)
+- 创建launchfile功能包，从config文件初始化参数并连接到树 (855f420)
 - 在主节点中正确注册订阅和发布，初始化黑板 (e7ee5cc)
 - 修正追踪逻辑，矫正阻塞问题，删去冗余保持距离逻辑 (b07a6eb)
 - 大致完成导航节点、躲避、巡航等功能 (ce61567)
@@ -29,6 +30,7 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (798425d)
 - 更新 CHANGELOG.md (cd8531a)
 - 更新 CHANGELOG.md (fe29a30)
 - 更新 CHANGELOG.md (8402018)
