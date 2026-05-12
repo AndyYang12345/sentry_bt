@@ -83,10 +83,8 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     blackboard->set("nav_cancel",   false);
 }
 
-// ============================================================
-// 主运行模式
-// ============================================================
-void run_basic_mode(const rclcpp::Node::SharedPtr& node)
+// 运行节点
+void run_mode(const rclcpp::Node::SharedPtr& node)
 {
     using namespace sentry_interfaces::msg;
 
@@ -103,7 +101,6 @@ void run_basic_mode(const rclcpp::Node::SharedPtr& node)
     factory.registerNodeType<Patrol>("Patrol");
     factory.registerNodeType<Dodge>("Dodge");
     factory.registerNodeType<ChaseEnemy>("ChaseEnemy");
-    factory.registerNodeType<KeepDistance>("KeepDistance");
 
     // 3. 创建黑板并初始化
     node_init(node);
@@ -186,7 +183,7 @@ int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
     auto node = rclcpp::Node::make_shared("decision_process_node");
-    run_basic_mode(node);
+    run_mode(node);
     rclcpp::shutdown();
     return 0;
 }

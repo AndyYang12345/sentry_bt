@@ -41,6 +41,8 @@ public:
     }
 
     NodeStatus tick() override {
+        // 这边想了一下，追击目标还是得从自瞄确定单位才能开始追击，所以目标选择还是保留当前算法，
+        // 但是我还是想实现自动追踪全局最近的单位，这意味着我还需要加一个自动扫描、云台控制节点
         std::vector<uint8_t>  target;
         std::vector<uint16_t> hp_enemy;
         std::vector<double>   target_distance;

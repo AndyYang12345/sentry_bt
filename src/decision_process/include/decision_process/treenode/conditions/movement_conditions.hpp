@@ -24,7 +24,7 @@ public:
             BT::InputPort<double>("target_y",    "目标Y坐标"),
             BT::InputPort<double>("current_x",   "当前X坐标"),
             BT::InputPort<double>("current_y",   "当前Y坐标"),
-            BT::InputPort<double>("xy_tolerance", "到达容差(m), 默认0.2"),
+            BT::InputPort<double>("XY_TOLERANCE", "到达容差(m), 默认0.2"),
         };
     }
 
@@ -35,7 +35,7 @@ public:
         if (!getInput("current_x", cx) || !getInput("current_y", cy))
             return BT::NodeStatus::FAILURE;
         // 容差有默认值
-        if (!getInput("xy_tolerance", tol))
+        if (!getInput("XY_TOLERANCE", tol))
             tol = 0.2;
 
         double dist = std::hypot(cx - tx, cy - ty);
