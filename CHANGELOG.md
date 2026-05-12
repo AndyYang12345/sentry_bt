@@ -24,12 +24,14 @@
 - 修改CMakeLists,创建项目目录结构 (6484edb)
 
 ### 🐛 Bug 修复 (Fixed)
+- 修正黑板键名taget和nav_target冗余 (253bd62)
 - 修正黑板键名错误问题 (7f5d6b8)
 - 修正信息接口依赖 (c2e1a81)
 - 用AI完成逻辑检查和必要逻辑重构，修正部分逻辑问题 (b3f31fd)
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (084c822)
 - 更新 CHANGELOG.md (798425d)
 - 更新 CHANGELOG.md (cd8531a)
 - 更新 CHANGELOG.md (fe29a30)
