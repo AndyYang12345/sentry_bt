@@ -20,7 +20,9 @@ public:
         : ConditionNode(name, config) {}
 
     static PortsList providedPorts() {
-        return { InputPort<uint16_t>("ammo", "当前弹药数量") };
+        return { 
+            InputPort<uint16_t>("ammo", "当前弹药数量") 
+        };
     }
 
     NodeStatus tick() override {
@@ -31,9 +33,10 @@ public:
 };
 
 /*
-    @brief 检查自瞄视野中是否存在可识别目标 (1-8号单位)
-    @params 读取 target (uint8_t[9]) — target[0]=模糊, target[1-8]=敌方1-8号
-    @return SUCCESS 至少有一个可见单位; FAILURE 无可识别单位
+    @brief 检查自瞄视野中是否存在可识别的地面单位(1-5号机器人)
+    @params 读取 target (uint8_t[9]) — AutoaimToDecision 目标可见性数组
+      target[0] 模糊装甲板, target[1-5] 敌方1-5号地面机器人
+    @return SUCCESS 至少有一个可见地面单位; FAILURE 无可识别地面单位
 */
 class CheckEnemyVisible : public ConditionNode {
 public:
@@ -41,14 +44,17 @@ public:
         : ConditionNode(name, config) {}
 
     static PortsList providedPorts() {
-        return { InputPort<std::vector<uint8_t>>("target", "自瞄目标可见性数组") };
+        return { 
+            InputPort<std::vector<uint8_t>>("target", "自瞄目标可见性数组") 
+        };
     }
 
     NodeStatus tick() override {
         std::vector<uint8_t> target;
         if (!getInput("target", target) || target.size() < 9)
             return NodeStatus::FAILURE;
-        for (size_t i = 1; i <= 8; ++i) {
+        // 仅检查 1-5 号地面机器人
+        for (size_t i = 1; i <= 5; ++i) {
             if (target[i] == 1) return NodeStatus::SUCCESS;
         }
         return NodeStatus::FAILURE;
