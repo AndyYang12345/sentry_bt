@@ -5,6 +5,7 @@
 ## [HEAD] - 2026-05-13
 
 ### ✨ 新功能 (Added)
+- 完成低血量判定节点 (935f805)
 - 创建costmap函数和测试程序，配置Cmakelists (c481186)
 - 新增进入躲避模式的判定节点和高级安全位置计算的接口（暂未实现），接入已有逻辑，用flag切换模式 (928d539)
 - 创建launchfile功能包，从config文件初始化参数并连接到树 (855f420)
@@ -34,6 +35,7 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (c24af22)
 - 更新 CHANGELOG.md (4243ba4)
 - 更新 CHANGELOG.md (0744502)
 - 更新README (21d474c)
