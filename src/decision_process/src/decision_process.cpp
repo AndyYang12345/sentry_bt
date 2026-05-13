@@ -5,8 +5,11 @@
 #include "decision_process/treenode/node_template.hpp"
 #include "decision_process/treenode/conditions/combat_conditions.hpp"
 #include "decision_process/treenode/conditions/movement_conditions.hpp"
+#include "decision_process/treenode/conditions/resource_conditions.hpp"
 #include "decision_process/treenode/actions/combat_actions.hpp"
 #include "decision_process/treenode/actions/dodge_actions.hpp"
+#include "decision_process/treenode/actions/control_actions.hpp"
+#include "decision_process/treenode/actions/lifecycle_actions.hpp"
 #include "decision_process/treenode/stateful/navigation_tasks.hpp"
 #include "interfaces/interfaces.hpp"
 
@@ -142,17 +145,34 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
     BT::BehaviorTreeFactory factory;
 
     // 2. 注册节点类型
-    factory.registerNodeType<CheckAmmo>("CheckAmmo");
-    factory.registerNodeType<CheckEnemyVisible>("CheckEnemyVisible");
-    factory.registerNodeType<CheckDamage>("CheckDamage");
+    // actions
     factory.registerNodeType<SelectTarget>("SelectTarget");
     factory.registerNodeType<AttackEnemy>("AttackEnemy");
+    factory.registerNodeType<SpinHalt>("SpinHalt");
+    factory.registerNodeType<SpinLow>("SpinLow");
+    factory.registerNodeType<SpinMid>("SpinMid");
+    factory.registerNodeType<SpinHigh>("SpinHigh");
+    factory.registerNodeType<SetTripodOff>("SetTripodOff");
+    factory.registerNodeType<SetTripodOn>("SetTripodOn");
+    factory.registerNodeType<SetPostureAttack>("SetPostureAttack");
+    factory.registerNodeType<SetPostureDefense>("SetPostureDefense");
+    factory.registerNodeType<SetPostureMove>("SetPostureMove");
+    factory.registerNodeType<CalculateSafePosition>("CalculateSafePosition");
+    // conditions
+    factory.registerNodeType<CheckAmmo>("CheckAmmo");
+    factory.registerNodeType<CheckEnemyVisible>("CheckEnemyVisible");
+    factory.registerNodeType<CheckSelfLowHP>("CheckSelfLowHP");
+    factory.registerNodeType<CheckUnderDefenseLowHP>("CheckUnderDefenseLowHP");
+    factory.registerNodeType<CheckDamage>("CheckDamage");
     factory.registerNodeType<CheckArrived>("CheckArrived");
+    //stateful
     factory.registerNodeType<GoToPoint>("GoToPoint");
+    factory.registerNodeType<GoHome>("GoHome");
     factory.registerNodeType<Patrol>("Patrol");
     factory.registerNodeType<Dodge>("Dodge");
     factory.registerNodeType<ChaseEnemy>("ChaseEnemy");
-    factory.registerNodeType<CalculateSafePosition>("CalculateSafePosition");
+    //update
+    factory.registerNodeType<Respawn>("Respawn");
 
     // 3. 创建黑板并初始化
     node_init(node);
@@ -217,6 +237,9 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
             (void)blackboard->get("spin_mode",       msg.spin_mode);
             (void)blackboard->get("shoot_mode",      msg.shoot_mode);
             pub_send->publish(msg);
+
+            // 这里不是很清楚如何判定是否成功复活，设置完flag并发送后下一tick清除
+            blackboard->set("confirm_respawn", static_cast<uint8_t>(0));
         }
 
         // --- 发布到 /decision_to_autoaim ---

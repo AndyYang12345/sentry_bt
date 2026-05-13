@@ -10,29 +10,6 @@ using namespace BT;
 // ============================================================
 
 /*
-    @brief 检查弹药是否充足
-    @params 读取 ammo (uint16_t) — 当前弹药量
-    @return SUCCESS 弹药 > 0; FAILURE 无弹药
-*/
-class CheckAmmo : public ConditionNode {
-public:
-    CheckAmmo(const std::string& name, const NodeConfig& config)
-        : ConditionNode(name, config) {}
-
-    static PortsList providedPorts() {
-        return { 
-            InputPort<uint16_t>("ammo", "当前弹药数量") 
-        };
-    }
-
-    NodeStatus tick() override {
-        uint16_t ammo = 0;
-        if (!getInput("ammo", ammo)) return NodeStatus::FAILURE;
-        return (ammo > 0) ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
-    }
-};
-
-/*
     @brief 检查自瞄视野中是否存在可识别的地面单位(1-5号机器人)
     @params 读取 target (uint8_t[9]) — AutoaimToDecision 目标可见性数组
       target[0] 模糊装甲板, target[1-5] 敌方1-5号地面机器人

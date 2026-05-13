@@ -31,9 +31,9 @@ public:
 /*
     @brief 检测自身防御增益是否充足，如果存在60%及以上防御增益时，血量低于HP_RETURN_UNDER_DEFENSE阈值则返回success，否则返回failure
 */
-class CheckUnderDefense : public ConditionNode {
+class CheckUnderDefenseLowHP : public ConditionNode {
 public:
-    CheckUnderDefense(const std::string& name, const NodeConfig& config)
+    CheckUnderDefenseLowHP(const std::string& name, const NodeConfig& config)
         : ConditionNode(name, config) {} 
     
     static PortsList providedPorts() {
@@ -55,5 +55,27 @@ public:
             return (hp < threshold) ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
         }
         return NodeStatus::FAILURE;
+    }
+};
+/*
+    @brief 检查弹药是否充足
+    @params 读取 ammo (uint16_t) — 当前弹药量
+    @return SUCCESS 弹药 > 0; FAILURE 无弹药
+*/
+class CheckAmmo : public ConditionNode {
+public:
+    CheckAmmo(const std::string& name, const NodeConfig& config)
+        : ConditionNode(name, config) {}
+
+    static PortsList providedPorts() {
+        return { 
+            InputPort<uint16_t>("ammo", "当前弹药数量") 
+        };
+    }
+
+    NodeStatus tick() override {
+        uint16_t ammo = 0;
+        if (!getInput("ammo", ammo)) return NodeStatus::FAILURE;
+        return (ammo > 0) ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
     }
 };
