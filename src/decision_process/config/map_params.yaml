@@ -10,3 +10,9 @@ decision_process_node:
 
     # ---------- 导航到达容差 ----------
     xy_tolerance: 0.2         # 到达目标点的距离容差 (m)
+
+    # ---------- 预设点 ----------
+    spawnpoint_x: 4.971         # 出生点X坐标 (m)4.971,7.5
+    spawnpoint_y: 7.500         # 出生点Y坐标 (m)
+    supplyzone_x: 2.000         # 补给点X坐标 (m)
+    supplyzone_y: 1.000         # 补给点Y坐标 (m)

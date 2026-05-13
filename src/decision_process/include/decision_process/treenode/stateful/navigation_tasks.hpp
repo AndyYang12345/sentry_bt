@@ -80,8 +80,8 @@ public:
         return {
             BT::InputPort<double>("current_x",    "当前X坐标"),
             BT::InputPort<double>("current_y",    "当前Y坐标"),
-            BT::InputPort<double>("HOME_X", "预设回家点X坐标"),
-            BT::InputPort<double>("HOME_Y", "预设回家点Y坐标"),
+            BT::InputPort<double>("SPAWNPOINT_X", "预设回家点X坐标"),
+            BT::InputPort<double>("SPAWNPOINT_Y", "预设回家点Y坐标"),
             BT::InputPort<double>("XY_TOLERANCE", "到达容差(m)"),
             BT::OutputPort<bool>("nav_cancel", "取消导航"),
         };
@@ -89,7 +89,41 @@ public:
 
     BT::NodeStatus onStart() override {
         double hx = 0.0, hy = 0.0;
-        if (!getInput("HOME_X", hx) || !getInput("HOME_Y", hy)) {
+        if (!getInput("SPAWNPOINT_X", hx) || !getInput("SPAWNPOINT_Y", hy)) {
+            return BT::NodeStatus::FAILURE;
+        }
+        nav_target_x_ = hx;
+        nav_target_y_ = hy;
+
+        double tol = 0.2;
+        getInput("XY_TOLERANCE", tol);
+        tolerance_ = tol;
+
+        start_time_ = std::chrono::steady_clock::now();
+        return BT::NodeStatus::RUNNING;
+    }
+};
+
+// GoToSupplyZone
+class GoToSupplyZone : public GoToPoint {
+public:
+    GoToSupplyZone(const std::string& name, const BT::NodeConfig& config)
+        : GoToPoint(name, config) {}
+    
+    static BT::PortsList providedPorts() {
+        return {
+            BT::InputPort<double>("current_x",    "当前X坐标"),
+            BT::InputPort<double>("current_y",    "当前Y坐标"),
+            BT::InputPort<double>("SUPPLYZONE_X", "补给区X坐标"),
+            BT::InputPort<double>("SUPPLYZONE_Y", "补给区Y坐标"),
+            BT::InputPort<double>("XY_TOLERANCE", "到达容差(m)"),
+            BT::OutputPort<bool>("nav_cancel", "取消导航"),
+        };
+    }
+
+    BT::NodeStatus onStart() override {
+        double hx = 0.0, hy = 0.0;
+        if (!getInput("SUPPLYZONE_X", hx) || !getInput("SUPPLYZONE_Y", hy)) {
             return BT::NodeStatus::FAILURE;
         }
         nav_target_x_ = hx;

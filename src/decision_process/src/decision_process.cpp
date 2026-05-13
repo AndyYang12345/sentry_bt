@@ -26,12 +26,12 @@ void node_init(const rclcpp::Node::SharedPtr& node)
     node->declare_parameter("map_width",       15.0);
     node->declare_parameter("map_length",      28.0);
     node->declare_parameter("xy_tolerance",     0.2);
+    node->declare_parameter("spawnpoint_x",    2.0);
+    node->declare_parameter("spawnpoint_y",    3.0);
+    node->declare_parameter("supplyzone_x",    8.0);
+    node->declare_parameter("supplyzone_y",    4.0);
 
     // --- movement_params.yaml ---
-    node->declare_parameter("max_rotate_speed", 3.14);
-    node->declare_parameter("spin_low_speed",   1.0);
-    node->declare_parameter("spin_mid_speed",   2.0);
-    node->declare_parameter("spin_high_speed",  3.0);
 
     // --- combat_params.yaml ---
     node->declare_parameter("ammo_threshold",       0);
@@ -66,14 +66,14 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     blackboard->set("map_width",      node->get_parameter("map_width").as_double());
     blackboard->set("map_height",     node->get_parameter("map_length").as_double());
     blackboard->set("XY_TOLERANCE",   node->get_parameter("xy_tolerance").as_double());
+    blackboard->set("SPAWNPOINT_X",   node->get_parameter("spawnpoint_x").as_double());
+    blackboard->set("SPAWNPOINT_Y",   node->get_parameter("spawnpoint_y").as_double());
+    blackboard->set("SUPPLYZONE_X",   node->get_parameter("supplyzone_x").as_double());
+    blackboard->set("SUPPLYZONE_Y",   node->get_parameter("supplyzone_y").as_double());
 
     // ============================================================
     // 运动控制参数 (movement_params.yaml)
     // ============================================================
-    blackboard->set("max_rotate_speed", node->get_parameter("max_rotate_speed").as_double());
-    blackboard->set("spin_low_speed",   node->get_parameter("spin_low_speed").as_double());
-    blackboard->set("spin_mid_speed",   node->get_parameter("spin_mid_speed").as_double());
-    blackboard->set("spin_high_speed",  node->get_parameter("spin_high_speed").as_double());
 
     // ============================================================
     // 战斗参数 (combat_params.yaml)
@@ -168,6 +168,7 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
     //stateful
     factory.registerNodeType<GoToPoint>("GoToPoint");
     factory.registerNodeType<GoHome>("GoHome");
+    factory.registerNodeType<GoToSupplyZone>("GoToSupplyZone");
     factory.registerNodeType<Patrol>("Patrol");
     factory.registerNodeType<Dodge>("Dodge");
     factory.registerNodeType<ChaseEnemy>("ChaseEnemy");
