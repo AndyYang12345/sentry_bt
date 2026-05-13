@@ -16,62 +16,60 @@
 - [ ] 构建行为树逻辑，确保树的结构合理，能够满足预期的决策流程。
 - [ ] 实现仿真
 
-```xml
-Day 1 ─── 🚗 基础移动                          [估计 8h]
+- [x] Day 1 ─── 🚗 基础移动                          [估计 8h]
 ├── GoToPoint     StatefulAction  发布目标点, 等到达 → SUCCESS
 ├── SetPosture    SyncAction      姿态切换 1进攻/2防御/3移动
 └── GoHome        StatefulAction  继承 GoToPoint, 目标=起始点
 
-Day 2 ─── 🔁 巡逻 + 打前哨                        [估计 8h]
+- [x] Day 2 ─── 🔁 巡逻 + 打前哨                        [估计 8h]
 ├── Patrol        StatefulAction  遍历点位列表, 逐个 GoToPoint
 ├── AttackOutpost StatefulAction  去(16,11)等前哨站hp=0
 └── Patrol xml    XML             点位集在xml中可配置
 
-Day 3 ─── 💚 资源管理                          [估计 8h]
+- [ ] Day 3 ─── 💚 资源管理                          [估计 8h]
 ├── CheckLowHP            ConditionNode  hp<阈值 → 回血
 ├── CheckDefenceBuff      ConditionNode  防御增益特化
 ├── CheckAmmoZero         ConditionNode  无弹触发
 ├── GoHeal                StatefulAction 去补给点等回血
 └── GoGetAmmo             StatefulAction 去补给点领弹
 
-Day 4 ─── 🎮 底盘+云台控制 + 小陀螺               [估计 6h]
+- [ ] Day 4 ─── 🎮 底盘+云台控制 + 小陀螺               [估计 6h]
 ├── SetSpinMode       SyncAction      前哨站存活→关, 摧毁→开
 ├── SetTripodMode     SyncAction      有目标→停转, 无目标→360°
 ├── ConfirmRespawn    SyncAction      自主复活确认
 └── 组装主树XML       XML             ReactiveSequence 串联全部子树
 
-Day 5 ─── 🏃 躲避 + 追击                        [估计 8h]
+- [x] Day 5 ─── 🏃 躲避 + 追击                        [估计 8h]
 ├── DodgeTrigger      ConditionNode  无敌方视野 + 受伤害
 ├── Dodge             StatefulAction 随机/预设移动路径
 ├── ChaseEnemy        StatefulAction 追击, 持续更新目标坐标
 ├── KeepDistance      StatefulAction 自适应距离 2.8m~1.8m
 └── RadarChase        StatefulAction 自瞄无目标→雷达坐标追击
 
-Day 6 ─── 🎯 高级战斗 + 坐标解算                 [估计 8h]
+- [ ] Day 6 ─── 🎯 高级战斗 + 坐标解算                 [估计 8h]
 ├── LowHPTargetSelect ConditionNode  残血<100 + 距离<4m → 优先
 ├── CoordinateConvert UpdateNode     极坐标→RM地图坐标
 ├── 全体联调         集成测试         整树跑通, 修复bug
 └── 参数调优         yaml            实战参数整定
 
-Day 7 ─── 🖥️ Rviz2 / Gazebo 仿真               [估计 8h]
+- [ ] Day 7 ─── 🖥️ Rviz2 / Gazebo 仿真               [估计 8h]
 ├── 哨兵URDF/SDF     模型            简单底盘+云台模型
 ├── Rviz2可视化       话题            显示坐标、目标、血量
 ├── Gazebo世界        场景            地图+障碍+补给点
 └── 仿真联调          跑通            哨兵在仿真中完成全流程
 
-Day 8 ─── 🎛️ QT 交互界面                       [估计 8h]
+- [ ] Day 8 ─── 🎛️ QT 交互界面                       [估计 8h]
 ├── rqt / 自定义QT    Dashboard      实时显示黑板关键值
 ├── 参数面板          Dynamic Reconf  滑动条改阈值
 ├── 话题注入          Topic Pub       手动发送坐标/血量
 ├── 树状态监控        Groot2连接      实时看BT流转
 └── 快捷指令          Service         一键归位/暂停/切换姿态
 
-Day 9 ─── 🧪 测试 + 缓冲                        [估计 8h]
+- [ ] Day 9 ─── 🧪 测试 + 缓冲                        [估计 8h]
 ├── 单元测试          关键Condition  边界条件验证
 ├── 场景测试          裁判系统联调    全流程跑通
 ├── 性能压测          100Hz稳定      CPU/内存检查
 └── 缓冲时间          修bug          前两天遗留问题
-```
 
 攻击逻辑：
 

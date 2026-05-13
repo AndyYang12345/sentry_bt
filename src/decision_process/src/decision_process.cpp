@@ -32,7 +32,8 @@ void node_init(const rclcpp::Node::SharedPtr& node)
 
     // --- combat_params.yaml ---
     node->declare_parameter("ammo_threshold",       0);
-    node->declare_parameter("defence_hp_threshold", 160);
+    node->declare_parameter("HP_DEFENCE_THRESHOLD", 160);
+    node->declare_parameter("HP_RETURN_THRESHOLD", 200);
     node->declare_parameter("dodge_duration",        3.0);
     node->declare_parameter("use_dynamic_dodge",     false);
     node->declare_parameter("safe_points_x",        std::vector<double>{7.0, 12.0, 7.0, 12.0});
@@ -62,7 +63,6 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     blackboard->set("map_width",      node->get_parameter("map_width").as_double());
     blackboard->set("map_height",     node->get_parameter("map_length").as_double());
     blackboard->set("XY_TOLERANCE",   node->get_parameter("xy_tolerance").as_double());
-    blackboard->set("xy_tolerance",   node->get_parameter("xy_tolerance").as_double());
 
     // ============================================================
     // 运动控制参数 (movement_params.yaml)
@@ -76,7 +76,8 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     // 战斗参数 (combat_params.yaml)
     // ============================================================
     blackboard->set("ammo_threshold",        node->get_parameter("ammo_threshold").as_int());
-    blackboard->set("defence_hp_threshold",  node->get_parameter("defence_hp_threshold").as_int());
+    blackboard->set("HP_DEFENCE_THRESHOLD",  node->get_parameter("HP_DEFENCE_THRESHOLD").as_int());
+    blackboard->set("HP_RETURN_THRESHOLD",   node->get_parameter("HP_RETURN_THRESHOLD").as_int());
     blackboard->set("dodge_duration",        node->get_parameter("dodge_duration").as_double());
     blackboard->set("use_dynamic_dodge",     node->get_parameter("use_dynamic_dodge").as_bool());
     blackboard->set("safe_points_x",         node->get_parameter("safe_points_x").as_double_array());

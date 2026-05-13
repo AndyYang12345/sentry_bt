@@ -59,13 +59,49 @@ public:
         setOutput("nav_cancel", true);
     }
 
+protected:
+    double nav_target_x_ = 0, nav_target_y_ = 0, tolerance_ = 0.2, timeout_ = 30.0;
+    std::chrono::steady_clock::time_point start_time_;
+
 private:
     double elapsed() {
         auto now = std::chrono::steady_clock::now();
         return std::chrono::duration<double>(now - start_time_).count();
     }
-    double nav_target_x_ = 0, nav_target_y_ = 0, tolerance_ = 0.2, timeout_ = 30.0;
-    std::chrono::steady_clock::time_point start_time_;
+};
+
+// GoHome
+class GoHome : public GoToPoint {
+public:
+    GoHome(const std::string& name, const BT::NodeConfig& config)
+        : GoToPoint(name, config) {}
+
+    static BT::PortsList providedPorts() {
+        return {
+            BT::InputPort<double>("current_x",    "当前X坐标"),
+            BT::InputPort<double>("current_y",    "当前Y坐标"),
+            BT::InputPort<double>("HOME_X", "预设回家点X坐标"),
+            BT::InputPort<double>("HOME_Y", "预设回家点Y坐标"),
+            BT::InputPort<double>("XY_TOLERANCE", "到达容差(m)"),
+            BT::OutputPort<bool>("nav_cancel", "取消导航"),
+        };
+    }
+
+    BT::NodeStatus onStart() override {
+        double hx = 0.0, hy = 0.0;
+        if (!getInput("HOME_X", hx) || !getInput("HOME_Y", hy)) {
+            return BT::NodeStatus::FAILURE;
+        }
+        nav_target_x_ = hx;
+        nav_target_y_ = hy;
+
+        double tol = 0.2;
+        getInput("XY_TOLERANCE", tol);
+        tolerance_ = tol;
+
+        start_time_ = std::chrono::steady_clock::now();
+        return BT::NodeStatus::RUNNING;
+    }
 };
 
 // ---------- ② Patrol: 巡逻（遍历点位列表）----------
