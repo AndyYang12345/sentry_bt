@@ -34,6 +34,7 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (4243ba4)
 - 更新 CHANGELOG.md (0744502)
 - 更新README (21d474c)
 - 更新 CHANGELOG.md (2e4211b)
@@ -75,6 +76,7 @@
 - 更新 CHANGELOG.md (1ef0b77)
 
 ### 🔧 维护/构建 (Maintenance)
+- 把黑板数据获取格式改成我喜欢的格式 (5f91e5b)
 - 修改树文件名字 (02c1bb7)
 - 删去多余注释、多余调试信息 (4a737de)
 - 修正README中的理解问题，理清通信原理 (065159e)
