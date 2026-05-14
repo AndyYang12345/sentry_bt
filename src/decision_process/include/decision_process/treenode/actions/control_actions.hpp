@@ -16,12 +16,12 @@ public:
 
     static PortsList providedPorts() {
         return {
-            OutputPort<int>("spin_mode", "0=停止, 1=低速, 2=中速, 3=高速")
+            OutputPort<uint8_t>("spin_mode", "0=停止, 1=低速, 2=中速, 3=高速")
         };
     }
 
     NodeStatus tick() override {
-        setOutput("spin_mode", spin_mode_);
+        setOutput("spin_mode", static_cast<uint8_t>(spin_mode_));
         return NodeStatus::RUNNING;
     }
 
@@ -66,12 +66,12 @@ public:
 
     static PortsList providedPorts() {
         return {
-            OutputPort<int>("tripod_mode", "0=关闭, 1=开启")
+            OutputPort<uint8_t>("tripod_mode", "0=关闭, 1=开启")
         };
     }
 
     NodeStatus tick() override {
-        setOutput("tripod_mode", tripod_mode_);
+        setOutput("tripod_mode", static_cast<uint8_t>(tripod_mode_));
         return NodeStatus::SUCCESS;
     }
 protected:
@@ -101,12 +101,12 @@ public:
 
     static PortsList providedPorts() {
         return {
-            OutputPort<int>("posture", "姿态控制,1进攻姿态 2防御姿态 3移动姿态")
+            OutputPort<uint8_t>("posture", "姿态控制,1进攻姿态 2防御姿态 3移动姿态")
         };
     }
 
     NodeStatus tick() override {
-        setOutput("posture", posture_);
+        setOutput("posture", static_cast<uint8_t>(posture_));
         return NodeStatus::SUCCESS;
     }
 protected:

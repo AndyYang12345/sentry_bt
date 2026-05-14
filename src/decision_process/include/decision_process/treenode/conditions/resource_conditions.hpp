@@ -69,13 +69,16 @@ public:
 
     static PortsList providedPorts() {
         return { 
-            InputPort<uint16_t>("ammo", "当前弹药数量") 
+            InputPort<uint16_t>("ammo", "当前弹药数量"),
+            InputPort<uint16_t>("ammo_threshold", "弹药阈值, 默认0")
         };
     }
 
     NodeStatus tick() override {
-        uint16_t ammo = 0;
+        uint16_t ammo = 0, threshold = 0;
         if (!getInput("ammo", ammo)) return NodeStatus::FAILURE;
-        return (ammo > 0) ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
+        getInput("ammo_threshold", threshold);
+        // 弹药 <= 阈值 → 弹药不足 (SUCCESS 触发补给)
+        return (ammo <= threshold) ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
     }
 };

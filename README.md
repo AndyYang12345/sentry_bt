@@ -173,3 +173,237 @@ Goto逻辑：
 - [ ]  雷达联动拉远距离
           💡 理解方向: 雷达精度低于自瞄, 依赖雷达时应拉远安全距离
              (如 max_dist 从4m调到6m), 避免因精度问题靠太近
+
+---
+
+## 🧠 行为树架构与逻辑详解 (2026-05-14)
+
+### 顶层结构
+
+```
+ReactiveSequence "RootSequence"           ← 每 tick 从第一个子节点重新开始
+├── CalculateAmmoToCollect                ← 前置计算: 比赛每分钟 +100 待领取弹药
+│    总是返回 SUCCESS → 不阻塞往下走
+│
+└── ReactiveFallback "TopLevelSelector"   ← 优先级选择器 (短路型)
+    ├── ❶ RespawnSequence                 ← 复活
+    ├── ❷ DodgeSequence                   ← 受伤躲避
+    ├── ❸ RetreatSequence                 ← 残血回城
+    ├── ❹ DefenseFightSequence            ← 防御增益战斗
+    ├── ❺ ResupplySequence                ← 弹药补给
+    ├── ❻ ChaseSequence                   ← 发现敌人 → 选目标 → 追击 → 开火
+    └── ❼ PatrolSequence                  ← 巡逻 (兜底, 永不 SUCCESS)
+```
+
+### 核心机制: ReactiveFallback 如何工作
+
+根据 BehaviorTree.CPP v4.8 官方源码 (`reactive_fallback.cpp:26-87`)：
+
+1. **每 tick 遍历所有子节点**，直到找到第一个返回 SUCCESS 的分支
+2. **遇到 RUNNING → 停止其他子节点** (haltChild)，返回 RUNNING
+3. **遇到 SUCCESS → 立即返回 SUCCESS**，不再检查后续分支
+4. **关键要求**: 只能有**一个**子节点返回 RUNNING
+
+### 分支逻辑详细流程
+
+#### ❶ RespawnSequence — 复活 (最高优先级)
+
+```
+Sequence "RespawnSequence"
+├── Respawn                  → 写入 confirm_respawn=1
+├── SetPostureMove           → 写入 posture=3 (移动姿态)
+└── CheckRespawned            → 等待血量恢复至 SENTRY_MAX_HP
+    ├── 血量未满 → RUNNING   → ReactiveFallback 以此为 RUNNING 子节点
+    └── 血量已满 → SUCCESS   → 清除 confirm_respawn=0, 复活完成
+```
+
+**⚠️ 已知问题**: 缺少 `CheckDead` 条件节点检查 `game_period==1`。当前 `Respawn` 无条件触发。
+
+---
+
+#### ❷ DodgeSequence — 受伤躲避
+
+```
+Sequence "DodgeSequence"
+├── CheckDamage               → 检测 hp 下降 + 无敌方视野
+│   ├── 已在窗口内 → SUCCESS  (窗口默认3秒, 可配置)
+│   ├── 受伤+无视野 → SUCCESS (进入窗口)
+│   └── 否则 → FAILURE       → 跳过此分支
+├── SetPostureDefense         → posture=2
+├── SpinHigh                  → spin_mode=3 (高速旋转)
+├── CalculateSafePosition     → 生成 safe_points_x/y (动态或预设)
+└── Dodge                     → 遍历安全点列表, 逐个导航
+    └── 永久返回 RUNNING      → 被更高优先级打断才退出
+```
+
+**数据流**: `CalculateSafePosition` → 写入 `safe_points_x/y` → `Dodge` 读取并导航
+
+---
+
+#### ❸ RetreatSequence — 残血回城
+
+```
+Sequence "RetreatSequence"
+├── CheckSelfLowHP             → hp < HP_RETURN_THRESHOLD ?
+│   ├── 是 → SUCCESS           (默认阈值 200)
+│   └── 否 → FAILURE          → 跳过此分支
+├── SetPostureDefense          → posture=2
+└── GoHome                     → 导航回 SPANWNPOINT_X/Y
+    ├── 未到达 → RUNNING       → 持续导航
+    └── 已到达 → SUCCESS
+```
+
+**注意**: `GoHome` 继承自 `GoToPoint` (StatefulActionNode)。`onRunning()` 每 tick 检查 `hypot(current_x - target_x, current_y - target_y) < tolerance`
+
+---
+
+#### ❹ DefenseFightSequence — 防御增益战斗
+
+```
+Sequence "DefenseFightSequence"
+├── CheckUnderDefenseLowHP     → defense_buff >= 60% 且 hp < HP_RETURN_UNDER_DEFENSE ?
+│   ├── 是 → SUCCESS           (默认阈值 120)
+│   └── 否 → FAILURE          → 跳过此分支
+└── SetPostureDefense          → posture=2 (仅设姿态, 不导航)
+    └── 返回 SUCCESS → Sequence → SUCCESS → ReactiveFallback 短路!
+```
+
+**设计意图**: 防御增益充足时, 设置防御姿态但不撤退。Sequence 返回 SUCCESS 后, ReactiveFallback 也不会再尝试后续分支 — 这是个 **待修正的设计问题**, 因为该 Sequence 总是返回 SUCCESS, 玩家就一直在防御姿态不做事了。
+
+---
+
+#### ❺ ResupplySequence — 弹药补给
+
+```
+Sequence "ResupplySequence"
+├── CheckAmmo                  → ammo == 0 ?
+│   ├── 是 → SUCCESS
+│   └── 否 → FAILURE          → 跳过此分支
+├── SetPostureMove             → posture=3
+├── GoToSupplyZone             → 导航到 SUPPLYZONE_X/Y
+│   ├── 未到达 → RUNNING
+│   └── 已到达 → SUCCESS
+└── CollectAmmo                → ammo += ammo_to_collect; ammo_to_collect=0
+    └── 返回 SUCCESS → Sequence → SUCCESS → ReactiveFallback 短路
+```
+
+---
+
+#### ❻ ChaseSequence — 发现敌人 → 追击 → 开火
+
+```
+Sequence "ChaseSequence"
+├── CheckEnemyVisible           → target[1-5] 中任一可见 ?
+│   ├── 是 → SUCCESS
+│   └── 否 → FAILURE          → 跳过此分支
+├── SetPostureAttack            → posture=1 (进攻姿态)
+├── SelectTarget                → 选最近的有效目标 (排除无敌 hp==1001 / 已摧毁)
+│   ├── 写入 target_id (1-8)
+│   └── 写入 decide_yaw (极角)
+├── ChaseEnemy                  → 自适应距离追击
+│   ├── dist > 4m  → 导航靠近到 2.8m  → RUNNING (阻塞射击)
+│   ├── dist < 1.2m → 导航后退到 1.8m  → RUNNING (阻塞射击)
+│   ├── 1.2m ≤ dist ≤ 4m → 不移动     → SUCCESS (放行射击)
+│   └── 雷达坐标丢失 → FAILURE
+├── SpinMid                     → spin_mode=2
+└── AttackEnemy                 → shoot_mode=1 (开火)
+```
+
+**关键设计**: `ChaseEnemy` 在舒适区 (`min_dist` ~ `max_dist`) 时返回 SUCCESS → 放行后续 `SpinMid` + `AttackEnemy`。离开舒适区时返回 RUNNING → 阻塞射击。
+
+---
+
+#### ❼ PatrolSequence — 巡逻 (兜底, 最低优先级)
+
+```
+Sequence "PatrolSequence"
+├── SetPostureMove              → posture=3
+├── SpinHalt                    → spin_mode=0 (停转)
+├── SetTripodOff                → tripod_mode=0 (云台关)
+└── Patrol                      → 遍历 patrol_points_x/y 列表
+    └── 永久返回 RUNNING         → 永远不被标记为 SUCCESS
+```
+
+**永不返回 SUCCESS** 是关键 — 巡逻作为兜底行为, 应被任何高优先级条件打断。一旦被打断 (Halt), 下次 tick 低优先级条件不满足时又从列表第一个点重新开始。
+
+---
+
+### 数据流总览
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ROS 2 话题 → 黑板同步                       │
+│                                                             │
+│  /serial_receive_data ──→ game_period, time, hp_sentry,     │
+│                            defense_buff, color, ammo,       │
+│                            hp_outpost, hp_base, hp_enemy,   │
+│                            radar_data                       │
+│                                                             │
+│  /autoaim_to_decision ──→ target[], target_distance[],      │
+│                            target_polar_angle[]              │
+│                                                             │
+│  /state_estimation    ──→ current_x, current_y, current_yaw │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│              黑板 (Blackboard) — 行为树内部共享                │
+│                                                             │
+│  输入端口 ← 黑板上读取数据                                     │
+│  输出端口 → 黑板上写入数据                                     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   黑板 → ROS 2 话题发布                        │
+│                                                             │
+│  posture, confirm_respawn ──→ /serial_send_data             │
+│  tripod_mode, spin_mode,                                      │
+│  shoot_mode                                                 │
+│                                                             │
+│  target_id, decide_yaw    ──→ /decision_to_autoaim          │
+│                                                             │
+│  nav_target_x, nav_target_y ──→ /goal_pose                  │
+│  nav_cancel (true时跳过发布)                                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 主循环 (100Hz)
+
+```
+while (rclcpp::ok()):
+    1. tree.tickOnce()           ← 驱动行为树一个周期
+    2. rclcpp::spin_some(node)   ← 处理所有话题回调 (更新黑板)
+    3. 从黑板读取决策结果 → 发布到对应话题
+    4. rate.sleep()
+```
+
+### 节点类型对照
+
+| 类型 | 基类 | tick 行为 | 示例 |
+|------|------|-----------|------|
+| **ConditionNode** | `ConditionNode` | 单 tick, 只读黑板, 返回 SUCCESS/FAILURE | `CheckEnemyVisible`, `CheckSelfLowHP` |
+| **SyncActionNode** | `SyncActionNode` | 单 tick, 可读写, 返回 SUCCESS/FAILURE | `SetPostureAttack`, `SelectTarget` |
+| **StatefulActionNode** | `StatefulActionNode` | 跨 tick, onStart()→onRunning()→onHalted() | `GoHome`, `Patrol`, `ChaseEnemy` |
+
+### 被打断 (Halt) 的处理流程
+
+```
+高优先级分支条件满足
+  → ReactiveFallback 找到另一个 RUNNING 的子节点
+    → haltChild(old_running_child)
+      → StatefulActionNode::halt()
+        → onHalted() 被调用
+          → 设置 nav_cancel = true
+            → 主循环检查 nav_cancel → 跳过 /goal_pose 发布
+```
+
+### 已知问题与待优化
+
+| # | 严重度 | 问题 | 位置 |
+|---|--------|------|------|
+| 1 | 🔴 | `CalculateAmmoToCollect` 在 ReactiveFallback 外已被修复 ✅ | main.xml |
+| 2 | 🟡 | `DefenseFightSequence` 总是返回 SUCCESS → 阻塞巡逻/进攻 | 分支❹ |
+| 3 | 🟡 | 缺少 `CheckDead` 条件节点 | 分支❶ |
+| 4 | 🟢 | `Patrol` 巡逻点初始化为空列表 | decision_process.cpp |
+| 5 | 🟢 | `TreeNodesModel` 中 `CalculateSafePosition` 端口声明需同步 C++ | main.xml |

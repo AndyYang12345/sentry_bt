@@ -20,7 +20,7 @@ public:
         return {
             InputPort<uint16_t>("hp_sentry", "当前血量"),
             InputPort<uint16_t>("SENTRY_MAX_HP", "最大血量"),
-            OutputPort<int>("confirm_respawn", "清除重生标志")
+            OutputPort<uint8_t>("confirm_respawn", "清除重生标志")
         };
     }
 
@@ -38,9 +38,14 @@ public:
             return BT::NodeStatus::FAILURE;
 
         if (hp == sentry_max_hp) {
-            setOutput("confirm_respawn", 0);  // 清除重生标志
+            setOutput("confirm_respawn", static_cast<uint8_t>(0));  // 清除重生标志
             return BT::NodeStatus::SUCCESS;
         }
         return BT::NodeStatus::RUNNING;
+    }
+
+    void onHalted() override {
+        // 等待回血过程中被打断 (例如进入躲避或攻击)
+        // 无需特殊清理, 下一个 tick 会重新从 CheckRespawned 开始等待
     }
 };

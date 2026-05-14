@@ -60,7 +60,7 @@ public:
     }
 
 protected:
-    double nav_target_x_ = 0, nav_target_y_ = 0, tolerance_ = 0.2, timeout_ = 30.0;
+    double nav_target_x_ = 0, nav_target_y_ = 0, tolerance_ = 0.2;
     std::chrono::steady_clock::time_point start_time_;
 
 private:

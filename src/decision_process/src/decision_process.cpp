@@ -11,6 +11,7 @@
 #include "decision_process/treenode/actions/control_actions.hpp"
 #include "decision_process/treenode/actions/lifecycle_actions.hpp"
 #include "decision_process/treenode/stateful/navigation_tasks.hpp"
+#include "decision_process/treenode/stateful/resource_tasks.hpp"
 #include "decision_process/treenode/update/perception_update.hpp"
 #include "interfaces/interfaces.hpp"
 
@@ -36,8 +37,9 @@ void node_init(const rclcpp::Node::SharedPtr& node)
 
     // --- combat_params.yaml ---
     node->declare_parameter("ammo_threshold",       0);
-    node->declare_parameter("HP_DEFENCE_THRESHOLD", 160);
-    node->declare_parameter("HP_RETURN_THRESHOLD", 200);
+    node->declare_parameter("HP_DEFENCE_THRESHOLD",      160);
+    node->declare_parameter("HP_RETURN_THRESHOLD",       200);
+    node->declare_parameter("HP_RETURN_UNDER_DEFENSE",   120);
     node->declare_parameter("dodge_duration",        3.0);
     node->declare_parameter("use_dynamic_dodge",     false);
     node->declare_parameter("safe_points_x",        std::vector<double>{7.0, 12.0, 7.0, 12.0});
@@ -79,9 +81,10 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     // ============================================================
     // 战斗参数 (combat_params.yaml)
     // ============================================================
-    blackboard->set("ammo_threshold",        node->get_parameter("ammo_threshold").as_int());
-    blackboard->set("HP_DEFENCE_THRESHOLD",  node->get_parameter("HP_DEFENCE_THRESHOLD").as_int());
-    blackboard->set("HP_RETURN_THRESHOLD",   node->get_parameter("HP_RETURN_THRESHOLD").as_int());
+    blackboard->set("ammo_threshold",        static_cast<uint16_t>(node->get_parameter("ammo_threshold").as_int()));
+    blackboard->set("HP_DEFENCE_THRESHOLD",  static_cast<uint16_t>(node->get_parameter("HP_DEFENCE_THRESHOLD").as_int()));
+    blackboard->set("HP_RETURN_THRESHOLD",   static_cast<uint16_t>(node->get_parameter("HP_RETURN_THRESHOLD").as_int()));
+    blackboard->set("HP_RETURN_UNDER_DEFENSE", static_cast<uint16_t>(node->get_parameter("HP_RETURN_UNDER_DEFENSE").as_int()));
     blackboard->set("dodge_duration",        node->get_parameter("dodge_duration").as_double());
     blackboard->set("use_dynamic_dodge",     node->get_parameter("use_dynamic_dodge").as_bool());
     blackboard->set("safe_points_x",         node->get_parameter("safe_points_x").as_double_array());
@@ -98,6 +101,7 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     blackboard->set("game_period",    static_cast<uint8_t>(0));
     blackboard->set("time",           static_cast<uint16_t>(0));
     blackboard->set("hp_sentry",      static_cast<uint16_t>(400));
+    blackboard->set("SENTRY_MAX_HP",  static_cast<uint16_t>(400));  // 哨兵满血量
     blackboard->set("defence_buff",   static_cast<uint8_t>(0));
     blackboard->set("color",          static_cast<uint8_t>(0));
     blackboard->set("ammo",           static_cast<uint16_t>(0));
@@ -177,6 +181,7 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
     factory.registerNodeType<Patrol>("Patrol");
     factory.registerNodeType<Dodge>("Dodge");
     factory.registerNodeType<ChaseEnemy>("ChaseEnemy");
+    factory.registerNodeType<CheckRespawned>("CheckRespawned");
     //update
     factory.registerNodeType<Respawn>("Respawn");
 

@@ -11,12 +11,12 @@ public:
 
     static PortsList providedPorts() {
         return {
-            OutputPort<int>("confirm_respawn", "触发重生")
+            OutputPort<uint8_t>("confirm_respawn", "触发重生")
         };
     }
 
     NodeStatus tick() override {
-        setOutput("confirm_respawn", 1);
+        setOutput("confirm_respawn", static_cast<uint8_t>(1));
         return NodeStatus::SUCCESS;
     }
 };

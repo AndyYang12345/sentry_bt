@@ -14,23 +14,37 @@
 
         <!--
         ╔══════════════════════════════════════════════════════════╗
-        ║  顶层: ReactiveFallback (反应式选择器)                    ║
-        ║  从左到右依次检查子节点，第一个 SUCCESS 的分支被激活      ║
-        ║  "Reactive" 意味着每 tick 重新评估前面的条件节点         ║
-        ║  高优先级条件满足时会打断正在运行的低优先级行为            ║
+        ║  顶层: ReactiveSequence                                  ║
+        ║  - 第一个子节点: 每 tick 计算衍生数据 (弹药累计等)         ║
+        ║  - 第二个子节点: ReactiveFallback 优先级选择器            ║
+        ║                                                          ║
+        ║  ReactiveSequence 每 tick 从第一个子节点开始遍历:          ║
+        ║    CalculateAmmoToCollect → SUCCESS → 下一个              ║
+        ║    ReactiveFallback → 评估优先级 → RUNNING (被打断)       ║
+        ║                                                          ║
+        ║  注意: CalculateAmmoToCollect 必须放在 ReactiveFallback   ║
+        ║  外部，否则它会作为 ReactiveFallback 的子节点，一旦       ║
+        ║  返回 SUCCESS 就会导致 ReactiveFallback 短路 (官方行为)   ║
         ╚══════════════════════════════════════════════════════════╝
         -->
-        <ReactiveFallback name="TopLevelSelector">
+        <ReactiveSequence name="RootSequence">
             <!-- ====================================================
-            前置计算: 每 tick 计算需要的衍生数据，供后续条件/动作节点使用
-            例如: 计算需要补给的子弹数量 ammo_to_collect
+            前置计算: 每 tick 执行，计算衍生数据供后续节点使用
             ==================================================== -->
-            <Sequence name="UpdateStatusSequence">
-                <CalculateAmmoToCollect name="calc_ammo_to_collect"
-                                  time="{time}"
-                                  game_period="{game_period}"
-                                  ammo_to_collect="{ammo_to_collect}"/>
-            </Sequence>
+            <CalculateAmmoToCollect name="calc_ammo_to_collect"
+                                   time="{time}"
+                                   game_period="{game_period}"
+                                   ammo_to_collect="{ammo_to_collect}"/>
+
+            <!--
+            ╔══════════════════════════════════════════════════════╗
+            ║  ReactiveFallback (反应式选择器)                      ║
+            ║  从左到右依次检查子节点，第一个 SUCCESS 的分支被激活  ║
+            ║  "Reactive" 意味着每 tick 重新评估前面的条件节点     ║
+            ║  高优先级条件满足时会打断正在运行的低优先级行为        ║
+            ╚══════════════════════════════════════════════════════╝
+            -->
+            <ReactiveFallback name="TopLevelSelector">
 
             <!-- ====================================================
             分支❶ 优先级最高: 复活
@@ -43,8 +57,7 @@
                 当前 Respawn 作为 Action 直接触发
                 -->
                 <Respawn name="do_respawn"
-                         confirm_respawn="{confirm_respawn}"
-                         posture="{posture}"/>
+                         confirm_respawn="{confirm_respawn}"/>
                 <SetPostureMove name="respawn_posture"
                                 posture="{posture}"/>
                 <CheckRespawned name="check_respawned"
@@ -74,17 +87,18 @@
                                        current_y="{current_y}"
                                        map_width="{map_width}"
                                        map_height="{map_height}"
+                                       radar_data="{radar_data}"
                                        safe_points_x="{safe_points_x}"
-                                       safe_points_y="{safe_points_y}"
-                                       use_dynamic_dodge="{use_dynamic_dodge}"
-                                       nav_target_x="{nav_target_x}"
-                                       nav_target_y="{nav_target_y}"/>
+                                       safe_points_y="{safe_points_y}"/>
                 <Dodge name="do_dodge"
+                       safe_points_x="{safe_points_x}"
+                       safe_points_y="{safe_points_y}"
+                       use_dynamic_dodge="{use_dynamic_dodge}"
                        current_x="{current_x}"
                        current_y="{current_y}"
+                       XY_TOLERANCE="{XY_TOLERANCE}"
                        nav_target_x="{nav_target_x}"
                        nav_target_y="{nav_target_y}"
-                       XY_TOLERANCE="{XY_TOLERANCE}"
                        nav_cancel="{nav_cancel}"/>
             </Sequence>
 
@@ -117,7 +131,7 @@
             <Sequence name="DefenseFightSequence">
                 <CheckUnderDefenseLowHP name="check_defense_hp"
                                         hp_sentry="{hp_sentry}"
-                                        HP_RETURN_UNDER_DEFENSE="{HP_RETURN_THRESHOLD}"
+                                        HP_RETURN_UNDER_DEFENSE="{HP_RETURN_UNDER_DEFENSE}"
                                         defense_buff="{defence_buff}"/>
                 <SetPostureDefense name="defense_fight_posture"
                                    posture="{posture}"/>
@@ -168,18 +182,17 @@
                 <!--
                 追击敌人: 保持在一定距离范围内 (min_dist ~ max_dist)
                 距离太远→靠近, 太近→后退, 范围内→维持
-                ChaseEnemy 内部根据 target_distance[target_id] 判断
+                ChaseEnemy 内部使用 radar_data[target_id] 解算敌方坐标来计算距离
                 -->
                 <ChaseEnemy name="chase_enemy"
+                            target_id="{target_id}"
+                            radar_data="{radar_data}"
                             current_x="{current_x}"
                             current_y="{current_y}"
-                            target_distance="{target_distance}"
-                            target_id="{target_id}"
                             min_dist="{min_dist}"
                             max_dist="{max_dist}"
                             close_to="{close_to}"
                             back_to="{back_to}"
-                            XY_TOLERANCE="{XY_TOLERANCE}"
                             nav_target_x="{nav_target_x}"
                             nav_target_y="{nav_target_y}"
                             nav_cancel="{nav_cancel}"/>
@@ -215,6 +228,7 @@
             </Sequence>
 
         </ReactiveFallback>
+        </ReactiveSequence>
     </BehaviorTree>
 
     <!-- ============================================================

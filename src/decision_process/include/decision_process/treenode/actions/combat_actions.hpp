@@ -36,7 +36,7 @@ public:
             InputPort<std::vector<double>>("target_distance", "目标距离数组"),
             InputPort<std::vector<double>>("target_polar_angle", "目标极角数组"),
             OutputPort<uint8_t>("target_id", "选定的目标编号(1-8)"),
-            OutputPort<float>("decide_yaw", "选定目标的极角, 传给自瞄模块")
+            OutputPort<double>("decide_yaw", "选定目标的极角, 传给自瞄模块")
         };
     }
 
@@ -78,7 +78,7 @@ public:
 
         if (best_id > 0) {
             setOutput("target_id", static_cast<uint8_t>(best_id));
-            setOutput("decide_yaw", static_cast<float>(target_polar_angle[best_id]));
+            setOutput("decide_yaw", static_cast<double>(target_polar_angle[best_id]));
             return NodeStatus::SUCCESS;
         }
         return NodeStatus::FAILURE;
