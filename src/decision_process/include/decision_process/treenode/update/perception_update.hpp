@@ -104,8 +104,10 @@ private:
           ammo_to_collect 以防止重复领取。
 
     黑板读取:
+      ammo            (uint16_t) — 当前剩余子弹量
       ammo_to_collect (uint16_t) — 待领取弹药量
     黑板写入:
+      ammo            (uint16_t) — 领取后子弹量 (ammo + ammo_to_collect)
       ammo_to_collect (uint16_t) — 清空为 0
 
     @return SUCCESS 领取成功; FAILURE 无可领取弹药
@@ -117,20 +119,32 @@ public:
 
     static PortsList providedPorts() {
         return {
+            InputPort<uint16_t>("ammo",            "当前剩余子弹量"),
             InputPort<uint16_t>("ammo_to_collect", "待领取弹药量"),
-            OutputPort<uint16_t>("ammo", "更新后血量"),
+            OutputPort<uint16_t>("ammo",           "领取后子弹量"),
             OutputPort<uint16_t>("ammo_to_collect", "清空为0")
         };
     }
 
     NodeStatus tick() override {
+        uint16_t ammo            = 0;
         uint16_t ammo_to_collect = 0;
+
+        if (!getInput("ammo", ammo))
+            return NodeStatus::FAILURE;
         if (!getInput("ammo_to_collect", ammo_to_collect))
             return NodeStatus::FAILURE;
+
         // 无可领取弹药
         if (ammo_to_collect == 0)
             return NodeStatus::FAILURE;
+
+        // 发放待领取弹药 → 剩余子弹量
+        uint16_t new_ammo = ammo + ammo_to_collect;
+
+        setOutput("ammo",            new_ammo);
         setOutput("ammo_to_collect", static_cast<uint16_t>(0));
+
         return NodeStatus::SUCCESS;
     }
 };
