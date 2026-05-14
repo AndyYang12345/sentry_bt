@@ -33,6 +33,7 @@
 - 修改CMakeLists,创建项目目录结构 (6484edb)
 
 ### 🐛 Bug 修复 (Fixed)
+- 修正拼写错误 (b0b6626)
 - 修复所有接口定义错误和冲突，实现主节点的初步运行 (41eac28)
 - 清除弹药获取多余接口 (7fd445c)
 - 修正头文件路径问题 (628b3ac)
@@ -43,6 +44,7 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (aed0369)
 - 更新 CHANGELOG.md (4aed219)
 - 更新 CHANGELOG.md (f5a3f24)
 - 更新 CHANGELOG.md (3e1c695)
