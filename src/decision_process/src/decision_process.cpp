@@ -11,6 +11,7 @@
 #include "decision_process/treenode/actions/control_actions.hpp"
 #include "decision_process/treenode/actions/lifecycle_actions.hpp"
 #include "decision_process/treenode/stateful/navigation_tasks.hpp"
+#include "decision_process/treenode/update/perception_update.hpp"
 #include "interfaces/interfaces.hpp"
 
 #include <memory>
@@ -100,6 +101,7 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     blackboard->set("defence_buff",   static_cast<uint8_t>(0));
     blackboard->set("color",          static_cast<uint8_t>(0));
     blackboard->set("ammo",           static_cast<uint16_t>(0));
+    blackboard->set("ammo_to_collect", static_cast<uint16_t>(0));  // 待领取弹药
     blackboard->set("hp_outpost",     static_cast<uint16_t>(0));
     blackboard->set("hp_base",        static_cast<uint16_t>(0));
     blackboard->set("hp_enemy",       std::vector<uint16_t>(8, 0));
@@ -158,6 +160,9 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
     factory.registerNodeType<SetPostureDefense>("SetPostureDefense");
     factory.registerNodeType<SetPostureMove>("SetPostureMove");
     factory.registerNodeType<CalculateSafePosition>("CalculateSafePosition");
+    // update
+    factory.registerNodeType<CalculateAmmoToCollect>("CalculateAmmoToCollect");
+    factory.registerNodeType<CollectAmmo>("CollectAmmo");
     // conditions
     factory.registerNodeType<CheckAmmo>("CheckAmmo");
     factory.registerNodeType<CheckEnemyVisible>("CheckEnemyVisible");
@@ -190,6 +195,8 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
             blackboard->set("defence_buff", msg->defence_buff);
             blackboard->set("color",        msg->color);
             blackboard->set("ammo",         msg->ammo);
+            // 注意: ammo_to_collect 由行为树 CalculateAmmoToCollect/CollectAmmo 节点管理
+            // 不在此处覆盖, 否则会冲掉累计值
             blackboard->set("hp_outpost",   msg->hp_outpost);
             blackboard->set("hp_base",      msg->hp_base);
             blackboard->set("hp_enemy",     msg->hp_enemy);

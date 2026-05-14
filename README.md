@@ -12,8 +12,8 @@
 
 ## TODO
 
-- [ ] 按照要求创建动作节点和基本判断节点，并且搭建一个简单的行为树来测试功能。
-- [ ] 构建行为树逻辑，确保树的结构合理，能够满足预期的决策流程。
+- [x] 按照要求创建动作节点和基本判断节点，并且搭建一个简单的行为树来测试功能。
+- [x] 构建行为树逻辑，确保树的结构合理，能够满足预期的决策流程。
 - [ ] 实现仿真
 
 - [x] Day 1 ─── 🚗 基础移动                          [估计 8h]
@@ -26,31 +26,31 @@
 ├── AttackOutpost StatefulAction  去(16,11)等前哨站hp=0
 └── Patrol xml    XML             点位集在xml中可配置
 
-- [ ] Day 3 ─── 💚 资源管理                          [估计 8h]
-├── CheckLowHP            ConditionNode  hp<阈值 → 回血
-├── CheckDefenceBuff      ConditionNode  防御增益特化
-├── CheckAmmoZero         ConditionNode  无弹触发
-├── GoHeal                StatefulAction 去补给点等回血
-└── GoGetAmmo             StatefulAction 去补给点领弹
+- [x] Day 3 ─── 💚 资源管理                          [估计 8h]
+├── CheckLowHP            ConditionNode  hp<阈值 → 回血          ✅ resource_conditions.hpp
+├── CheckDefenceBuff      ConditionNode  防御增益特化(buff≥60%)   ✅ resource_conditions.hpp
+├── CheckAmmoZero         ConditionNode  无弹触发                  ✅ resource_conditions.hpp
+├── GoHeal                StatefulAction 去补给点等回血            ✅ GoToSupplyZone (navigation_tasks.hpp)
+└── GoGetAmmo             StatefulAction 去补给点领弹              ✅ GoToSupplyZone (navigation_tasks.hpp)
 
-- [ ] Day 4 ─── 🎮 底盘+云台控制 + 小陀螺               [估计 6h]
-├── SetSpinMode       SyncAction      前哨站存活→关, 摧毁→开
-├── SetTripodMode     SyncAction      有目标→停转, 无目标→360°
-├── ConfirmRespawn    SyncAction      自主复活确认
-└── 组装主树XML       XML             ReactiveSequence 串联全部子树
+- [x] Day 4 ─── 🎮 底盘+云台控制 + 小陀螺               [估计 6h]
+├── SetSpinMode       SyncAction      前哨站存活→关, 摧毁→开    ✅ SpinHalt/Low/Mid/High (control_actions.hpp)
+├── SetTripodMode     SyncAction      有目标→停转, 无目标→360°   ✅ SetTripodOn/Off (control_actions.hpp)
+├── ConfirmRespawn    SyncAction      自主复活确认                ✅ Respawn (lifecycle_actions.hpp)
+└── 组装主树XML       XML             ReactiveSequence 串联全部子树 ✅ main.xml (7分支优先级选择器)
 
 - [x] Day 5 ─── 🏃 躲避 + 追击                        [估计 8h]
-├── DodgeTrigger      ConditionNode  无敌方视野 + 受伤害
-├── Dodge             StatefulAction 随机/预设移动路径
-├── ChaseEnemy        StatefulAction 追击, 持续更新目标坐标
-├── KeepDistance      StatefulAction 自适应距离 2.8m~1.8m
-└── RadarChase        StatefulAction 自瞄无目标→雷达坐标追击
+├── DodgeTrigger      ConditionNode  无敌方视野 + 受伤害          ✅ CheckDamage (movement_conditions.hpp)
+├── Dodge             StatefulAction 随机/预设移动路径             ✅ Dodge (navigation_tasks.hpp)
+├── ChaseEnemy        StatefulAction 追击, 持续更新目标坐标        ✅ ChaseEnemy (navigation_tasks.hpp)
+├── KeepDistance      StatefulAction 自适应距离 2.8m~1.8m         ✅ 并入ChaseEnemy (close_to/back_to参数)
+└── RadarChase        StatefulAction 自瞄无目标→雷达坐标追击       🟡 雷达数据已接入, 追击逻辑待实现
 
 - [ ] Day 6 ─── 🎯 高级战斗 + 坐标解算                 [估计 8h]
-├── LowHPTargetSelect ConditionNode  残血<100 + 距离<4m → 优先
-├── CoordinateConvert UpdateNode     极坐标→RM地图坐标
-├── 全体联调         集成测试         整树跑通, 修复bug
-└── 参数调优         yaml            实战参数整定
+├── LowHPTargetSelect ConditionNode  残血<100 + 距离<4m → 优先    ❌ SelectTarget目前仅按距离选, 需增加残血优先逻辑
+├── CoordinateConvert UpdateNode     极坐标→RM地图坐标             ❌ 需实现: x_w = x_self + d*cos(yaw+θ), y_w = y_self + d*sin(yaw+θ)
+├── 全体联调         集成测试         整树跑通, 修复bug            ❌ 待行为树XML完善后进行
+└── 参数调优         yaml            实战参数整定                  ❌ 需实际比赛环境调试
 
 - [ ] Day 7 ─── 🖥️ Rviz2 / Gazebo 仿真               [估计 8h]
 ├── 哨兵URDF/SDF     模型            简单底盘+云台模型
@@ -105,9 +105,71 @@ Goto逻辑：
 - 过程：依次取出点位列表中的坐标，发布导航目标，
 - 持续检查当前坐标和目标坐标的距离，如果小于停止距离则认为到达成功，继续下一个点位，直到列表遍历完成
 
-一次追击流程：
+一次追击流程（✅ 已全部在 main.xml 中实现）：
 
-- check_enemy_visible
-- select_target
-- chase_enemy
-- attack_enemy
+- check_enemy_visible    ✅ CheckEnemyVisible
+- select_target          ✅ SelectTarget (最近距离优先, 过滤无敌/已摧毁)
+- chase_enemy            ✅ ChaseEnemy (自适应距离 2.8m~1.8m)
+- attack_enemy           ✅ AttackEnemy (shoot_mode=1)
+
+
+## 📋 详细需求完成状态 (2026-05-14 更新)
+
+### ✅ 已完成
+- [x]  姿态切换：比赛过程中是需要根据不同的场景切换不同的姿态，默认是移动姿态
+          → SetPostureAttack/Defense/Move (control_actions.hpp)
+- [x]  躲避行为：无敌方单位但受到伤害→动起来躲避; 伤害解除后回归正常
+          → CheckDamage (3秒躲避窗口计时) + CalculateSafePosition + Dodge
+- [x]  巡逻行为：在xml可配置的点集中来回巡逻
+          → Patrol (navigation_tasks.hpp) + main.xml patrol_points_x/y
+- [x]  小陀螺控制：己方前哨被摧毁前关闭小陀螺，被摧毁后打开
+          → SpinHalt/Low/Mid/High (control_actions.hpp)
+- [x]  云台控制：有射击目标→停转, 无目标→360°观察
+          → SetTripodOn/Off (control_actions.hpp)
+- [x]  回血阈值：低于200血量时前往补给点回血
+          → CheckSelfLowHP (resource_conditions.hpp) + GoHome (navigation_tasks.hpp)
+- [x]  运行时参数：血量阈值在xml中指定
+          → 所有阈值通过 {变量名} 端口从 Blackboard 传入
+- [x]  防御增益特化：buff≥60% + hp<160 才回血
+          → CheckUnderDefenseLowHP (resource_conditions.hpp)
+- [x]  击打目标：自瞄有非无敌目标→指定目标编号+发送射击指令
+          → SelectTarget + AttackEnemy (combat_actions.hpp)
+- [x]  不击打无敌目标：hp==1001 跳过
+          → SelectTarget 中 if(hp==1001) continue
+- [x]  不击打无效单位：建筑 hp==0 跳过
+          → SelectTarget 中 if(hp==0 && 建筑) continue
+- [x]  距离目标选择：多目标时优先选距离最近的
+          → SelectTarget 按 target_distance 取最小
+- [x]  追击：通过发布导航目标点引导哨兵移动追击
+          → ChaseEnemy (navigation_tasks.hpp)
+- [x]  自主确认复活：死亡后自动发送复活确认
+          → Respawn (lifecycle_actions.hpp)
+- [x]  不抖动的追击行为/自适应距离调节：>4m追到2.8m; <1.2m退到1.8m
+          → ChaseEnemy 内 close_to=2.8 / back_to=1.8 参数
+- [x]  运行时参数：追击参数在xml中指定
+          → min_dist/max_dist/close_to/back_to 全部通过端口传入
+- [x]  行为树XML总框架：7分支优先级选择器
+          → main.xml (ReactiveFallback: 复活>躲避>回城>防御战>补给>进攻>巡逻)
+
+### 🟡 部分完成
+- [ ]  无弹量行为：无弹时若有待领弹量→领弹, 无→站桩等待
+          🟡 GoToSupplyZone 已实现导航到补给区, 但缺少"待领弹量检查"和"站桩点等待"逻辑
+
+### ❌ 待实现
+- [ ]  归位：比赛结束时自动返回哨兵启动点
+          → 需检查 game_period 判断比赛结束阶段, 触发 GoHome
+- [ ]  打前哨：比赛开始先攻击敌方前哨站(16,11), 摧毁后才进行其他行为
+          → 需 CheckOutpostAlive 条件节点 + XML 最顶层打前哨分支
+- [ ]  残血目标选择：hp<100且距离<4m的地面单位→优先击打其中血量最低的
+          → SelectTarget 目前仅按距离选, 需增加"残血优先"的二次排序逻辑
+- [ ]  自瞄视野内单位相对坐标解算到RM地图坐标系
+          💡 理解方向: 自瞄给出的是相对于哨兵的极坐标(distance, polar_angle)
+             解算公式: x_w = x_self + d * cos(yaw + θ_polar)
+                      y_w = y_self + d * sin(yaw + θ_polar)
+             需要 current_x, current_y, current_yaw (已在黑板中)
+- [ ]  雷达联动追击：自瞄无目标时→向雷达侦查到的非无敌目标追击
+          💡 理解方向: radar_data(float[12]) = 6个敌方单位世界坐标(x0,y0,x1,y1...x5,y5)
+             当SelectTarget返回FAILURE时, 遍历radar_data找最近非零坐标作为追击目标
+- [ ]  雷达联动拉远距离
+          💡 理解方向: 雷达精度低于自瞄, 依赖雷达时应拉远安全距离
+             (如 max_dist 从4m调到6m), 避免因精度问题靠太近

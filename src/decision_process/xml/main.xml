@@ -1,22 +1,351 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root BTCPP_format="4">
-    <TreeNodesModel>
-        <Action ID="SayMsg">
-            <input_port name="message" default="空">要打印的消息</input_port>
-        </Action>
-        <Action ID="CalculateSum">
-            <input_port name="a" default="0">第一个加数</input_port>
-            <input_port name="b" default="0">第二个加数</input_port>
-            <output_port name="sum">计算结果</output_port>
-        </Action>
-    </TreeNodesModel>
-    
-    <BehaviorTree ID="SimpleTree">
-        <Sequence name="main_sequence">
-            <SayMsg name="message" message="Hello, World!"/>
-            <SayMsg name="massage" message="{greeting_msg}"/>
-            <CalculateSum a="5" b="10" sum="{sum_result}"/>
-            <SayMsg name="sum" message="The sum is: {sum_result}"/>
-        </Sequence>
+
+    <!-- ============================================================
+    行为树: 哨兵机器人自主决策 (Sentry Decision Tree)
+    架构: ReactiveFallback 优先级选择器
+          优先级从高到低: 复活 > 躲避 > 回城 > 补给 > 防御战 > 进攻 > 巡逻
+          每 tick 重新评估条件，高优先级可随时打断低优先级行为
+
+    数据流: Blackboard 变量 {xxx} 由 C++ 订阅回调实时更新
+    ============================================================ -->
+
+    <BehaviorTree ID="MainTree">
+
+        <!--
+        ╔══════════════════════════════════════════════════════════╗
+        ║  顶层: ReactiveFallback (反应式选择器)                    ║
+        ║  从左到右依次检查子节点，第一个 SUCCESS 的分支被激活      ║
+        ║  "Reactive" 意味着每 tick 重新评估前面的条件节点         ║
+        ║  高优先级条件满足时会打断正在运行的低优先级行为            ║
+        ╚══════════════════════════════════════════════════════════╝
+        -->
+        <ReactiveFallback name="TopLevelSelector">
+
+            <!-- ====================================================
+            分支❶ 优先级最高: 复活
+            条件: game_period == 1 (死亡状态)
+            动作: 发送复活确认 → 重置为移动姿态
+            ==================================================== -->
+            <Sequence name="RespawnSequence">
+                <!--
+                TODO: 需要一个 CheckDead 条件节点来检查 game_period
+                当前 Respawn 作为 Action 直接触发
+                -->
+                <Respawn name="do_respawn"
+                         confirm_respawn="{confirm_respawn}"
+                         posture="{posture}"/>
+                <SetPostureMove name="respawn_posture"
+                                posture="{posture}"/>
+            </Sequence>
+
+            <!-- ====================================================
+            分支❷: 受伤躲避
+            条件: CheckDamage → 检测到掉血且无敌方视野
+            动作: CalculateSafePosition(算安全点) → Dodge(执行躲避)
+            注意: CheckDamage 自带躲避窗口计时(默认3秒)，窗口内持续 SUCCESS
+            ==================================================== -->
+            <Sequence name="DodgeSequence">
+                <CheckDamage name="check_hurt"
+                             hp_sentry="{hp_sentry}"
+                             target="{target}"
+                             dodge_duration="{dodge_duration}"/>
+                <SetPostureDefense name="dodge_posture"
+                                   posture="{posture}"/>
+                <SpinHigh name="dodge_spin"
+                          spin_mode="{spin_mode}"/>
+                <CalculateSafePosition name="calc_safe_pos"
+                                       current_x="{current_x}"
+                                       current_y="{current_y}"
+                                       map_width="{map_width}"
+                                       map_height="{map_height}"
+                                       safe_points_x="{safe_points_x}"
+                                       safe_points_y="{safe_points_y}"
+                                       use_dynamic_dodge="{use_dynamic_dodge}"
+                                       nav_target_x="{nav_target_x}"
+                                       nav_target_y="{nav_target_y}"/>
+                <Dodge name="do_dodge"
+                       current_x="{current_x}"
+                       current_y="{current_y}"
+                       nav_target_x="{nav_target_x}"
+                       nav_target_y="{nav_target_y}"
+                       XY_TOLERANCE="{XY_TOLERANCE}"
+                       nav_cancel="{nav_cancel}"/>
+            </Sequence>
+
+            <!-- ====================================================
+            分支❸: 残血回城
+            条件: CheckSelfLowHP → 血量 < HP_RETURN_THRESHOLD
+            动作: 切防御姿态 → 导航回出生点
+            ==================================================== -->
+            <Sequence name="RetreatSequence">
+                <CheckSelfLowHP name="check_low_hp"
+                                hp_sentry="{hp_sentry}"
+                                HP_RETURN_THRESHOLD="{HP_RETURN_THRESHOLD}"/>
+                <SetPostureDefense name="retreat_posture"
+                                   posture="{posture}"/>
+                <GoHome name="go_home"
+                        current_x="{current_x}"
+                        current_y="{current_y}"
+                        SPAWNPOINT_X="{SPAWNPOINT_X}"
+                        SPAWNPOINT_Y="{SPAWNPOINT_Y}"
+                        XY_TOLERANCE="{XY_TOLERANCE}"
+                        nav_cancel="{nav_cancel}"/>
+            </Sequence>
+
+            <!-- ====================================================
+            分支❹: 低血量但有防御增益 → 战斗到底
+            条件: CheckUnderDefenseLowHP → 血量低但防御buff ≥ 60%
+            动作: 切防御姿态 → 不撤退（让后续进攻分支接管）
+            说明: 仅设置姿态，不做导航，Fallback 继续往下尝试进攻
+            ==================================================== -->
+            <Sequence name="DefenseFightSequence">
+                <CheckUnderDefenseLowHP name="check_defense_hp"
+                                        hp_sentry="{hp_sentry}"
+                                        HP_RETURN_UNDER_DEFENSE="{HP_RETURN_THRESHOLD}"
+                                        defense_buff="{defence_buff}"/>
+                <SetPostureDefense name="defense_fight_posture"
+                                   posture="{posture}"/>
+                <!-- 不导航，进入下一分支尝试进攻 -->
+            </Sequence>
+
+            <!-- ====================================================
+            分支❺: 弹药耗尽 → 去补给区
+            条件: CheckAmmo → ammo <= ammo_threshold (子弹打光)
+            动作: 切移动姿态 → 导航到补给区
+            ==================================================== -->
+            <Sequence name="ResupplySequence">
+                <CheckAmmo name="check_no_ammo"
+                           ammo="{ammo}"
+                           ammo_threshold="{ammo_threshold}"/>
+                <SetPostureMove name="resupply_posture"
+                                posture="{posture}"/>
+                <GoToSupplyZone name="go_supply"
+                                current_x="{current_x}"
+                                current_y="{current_y}"
+                                SUPPLYZONE_X="{SUPPLYZONE_X}"
+                                SUPPLYZONE_Y="{SUPPLYZONE_Y}"
+                                XY_TOLERANCE="{XY_TOLERANCE}"
+                                nav_cancel="{nav_cancel}"/>
+            </Sequence>
+
+            <!-- ====================================================
+            分支❻: 发现敌人 → 选目标 → 追击 → 攻击
+            ==================================================== -->
+
+            <!-- ❻-1 有可见敌人 → 选目标 + 追击 -->
+            <Sequence name="ChaseSequence">
+                <CheckEnemyVisible name="see_enemy"
+                                   target="{target}"/>
+                <SetPostureAttack name="chase_posture"
+                                  posture="{posture}"/>
+                <SelectTarget name="select_target"
+                              target="{target}"
+                              hp_enemy="{hp_enemy}"
+                              target_distance="{target_distance}"
+                              target_polar_angle="{target_polar_angle}"
+                              target_id="{target_id}"
+                              decide_yaw="{decide_yaw}"/>
+
+                <!--
+                追击敌人: 保持在一定距离范围内 (min_dist ~ max_dist)
+                距离太远→靠近, 太近→后退, 范围内→维持
+                ChaseEnemy 内部根据 target_distance[target_id] 判断
+                -->
+                <ChaseEnemy name="chase_enemy"
+                            current_x="{current_x}"
+                            current_y="{current_y}"
+                            target_distance="{target_distance}"
+                            target_id="{target_id}"
+                            min_dist="{min_dist}"
+                            max_dist="{max_dist}"
+                            close_to="{close_to}"
+                            back_to="{back_to}"
+                            XY_TOLERANCE="{XY_TOLERANCE}"
+                            nav_target_x="{nav_target_x}"
+                            nav_target_y="{nav_target_y}"
+                            nav_cancel="{nav_cancel}"/>
+
+                <!-- 到达追击位置后 → 开火 -->
+                <SpinMid name="attack_spin"
+                         spin_mode="{spin_mode}"/>
+                <AttackEnemy name="fire"
+                             shoot_mode="{shoot_mode}"/>
+            </Sequence>
+
+            <!-- ====================================================
+            分支❼ 兜底: 巡逻 (最低优先级)
+            无敌人、无需补给、血量安全 → 按 patrol_points 列表巡逻
+            永不自行返回 SUCCESS，等待高优先级条件打断 (被Halt)
+            ==================================================== -->
+            <Sequence name="PatrolSequence">
+                <SetPostureMove name="patrol_posture"
+                                posture="{posture}"/>
+                <SpinHalt name="patrol_spin_off"
+                          spin_mode="{spin_mode}"/>
+                <SetTripodOff name="patrol_tripod_off"
+                              tripod_mode="{tripod_mode}"/>
+                <Patrol name="do_patrol"
+                        patrol_points_x="{patrol_points_x}"
+                        patrol_points_y="{patrol_points_y}"
+                        current_x="{current_x}"
+                        current_y="{current_y}"
+                        XY_TOLERANCE="{XY_TOLERANCE}"
+                        nav_target_x="{nav_target_x}"
+                        nav_target_y="{nav_target_y}"
+                        nav_cancel="{nav_cancel}"/>
+            </Sequence>
+
+        </ReactiveFallback>
     </BehaviorTree>
+
+    <!-- ============================================================
+    节点模型声明 (供 Groot 可视化编辑器使用，运行时可选)
+    列出所有自定义节点的输入/输出端口
+    ============================================================ -->
+    <TreeNodesModel>
+        <!-- === 条件节点 (ConditionNode, 只读黑板) === -->
+        <Condition ID="CheckEnemyVisible">
+            <input_port name="target">自瞄目标可见性数组 uint8[9]</input_port>
+        </Condition>
+        <Condition ID="CheckSelfLowHP">
+            <input_port name="hp_sentry" default="400">当前血量</input_port>
+            <input_port name="HP_RETURN_THRESHOLD" default="200">残血回城阈值</input_port>
+        </Condition>
+        <Condition ID="CheckUnderDefenseLowHP">
+            <input_port name="hp_sentry" default="400">当前血量</input_port>
+            <input_port name="HP_RETURN_UNDER_DEFENSE" default="160">防御姿态下残血阈值</input_port>
+            <input_port name="defense_buff" default="0">防御增益百分比(0-100)</input_port>
+        </Condition>
+        <Condition ID="CheckAmmo">
+            <input_port name="ammo" default="0">当前子弹数</input_port>
+            <input_port name="ammo_threshold" default="0">弹药耗尽阈值</input_port>
+        </Condition>
+        <Condition ID="CheckDamage">
+            <input_port name="hp_sentry" default="400">当前血量</input_port>
+            <input_port name="target">自瞄目标可见性数组</input_port>
+            <input_port name="dodge_duration" default="3.0">躲避窗口时长(秒)</input_port>
+        </Condition>
+        <Condition ID="CheckArrived">
+            <input_port name="nav_target_x">目标X</input_port>
+            <input_port name="nav_target_y">目标Y</input_port>
+            <input_port name="current_x">当前X</input_port>
+            <input_port name="current_y">当前Y</input_port>
+            <input_port name="XY_TOLERANCE" default="0.2">到达容差(m)</input_port>
+        </Condition>
+
+        <!-- === 控制动作 (SyncActionNode, 单 tick 完成) === -->
+        <Action ID="SpinHalt">
+            <output_port name="spin_mode" default="0">底盘旋转: 0=停止</output_port>
+        </Action>
+        <Action ID="SpinLow">
+            <output_port name="spin_mode" default="1">底盘旋转: 1=低速</output_port>
+        </Action>
+        <Action ID="SpinMid">
+            <output_port name="spin_mode" default="2">底盘旋转: 2=中速</output_port>
+        </Action>
+        <Action ID="SpinHigh">
+            <output_port name="spin_mode" default="3">底盘旋转: 3=高速</output_port>
+        </Action>
+        <Action ID="SetTripodOff">
+            <output_port name="tripod_mode" default="0">云台: 0=关闭</output_port>
+        </Action>
+        <Action ID="SetTripodOn">
+            <output_port name="tripod_mode" default="1">云台: 1=开启</output_port>
+        </Action>
+        <Action ID="SetPostureAttack">
+            <output_port name="posture" default="1">姿态: 1=进攻</output_port>
+        </Action>
+        <Action ID="SetPostureDefense">
+            <output_port name="posture" default="2">姿态: 2=防御</output_port>
+        </Action>
+        <Action ID="SetPostureMove">
+            <output_port name="posture" default="3">姿态: 3=移动</output_port>
+        </Action>
+        <Action ID="SelectTarget">
+            <input_port name="target">自瞄目标可见性数组</input_port>
+            <input_port name="hp_enemy">敌方血量数组</input_port>
+            <input_port name="target_distance">目标距离数组</input_port>
+            <input_port name="target_polar_angle">目标极角数组</input_port>
+            <output_port name="target_id" default="0">选定目标编号(1-8)</output_port>
+            <output_port name="decide_yaw" default="0.0">目标极角,传给自瞄</output_port>
+        </Action>
+        <Action ID="AttackEnemy">
+            <output_port name="shoot_mode" default="1">开火: 1=开火</output_port>
+        </Action>
+        <Action ID="CalculateSafePosition">
+            <input_port name="current_x">当前X坐标</input_port>
+            <input_port name="current_y">当前Y坐标</input_port>
+            <input_port name="map_width" default="15.0">地图宽度(m)</input_port>
+            <input_port name="map_height" default="28.0">地图高度(m)</input_port>
+            <input_port name="safe_points_x">预定义安全点X数组</input_port>
+            <input_port name="safe_points_y">预定义安全点Y数组</input_port>
+            <input_port name="use_dynamic_dodge" default="false">是否动态计算躲避点</input_port>
+            <output_port name="nav_target_x">计算出的躲避目标X</output_port>
+            <output_port name="nav_target_y">计算出的躲避目标Y</output_port>
+        </Action>
+        <Action ID="Respawn">
+            <output_port name="confirm_respawn" default="1">复活确认: 1=确认</output_port>
+            <output_port name="posture" default="3">复活后姿态: 3=移动</output_port>
+        </Action>
+
+        <!-- === 有状态导航节点 (StatefulActionNode, 跨 tick 持续) === -->
+        <SubTree ID="GoToPoint">
+            <input_port name="current_x">当前X坐标</input_port>
+            <input_port name="current_y">当前Y坐标</input_port>
+            <input_port name="XY_TOLERANCE" default="0.2">到达容差(m)</input_port>
+            <input_port name="nav_target_x">导航目标X</input_port>
+            <input_port name="nav_target_y">导航目标Y</input_port>
+            <output_port name="nav_cancel" default="false">取消导航标志</output_port>
+        </SubTree>
+        <SubTree ID="GoHome">
+            <input_port name="current_x">当前X坐标</input_port>
+            <input_port name="current_y">当前Y坐标</input_port>
+            <input_port name="SPAWNPOINT_X" default="2.0">出生点X</input_port>
+            <input_port name="SPAWNPOINT_Y" default="3.0">出生点Y</input_port>
+            <input_port name="XY_TOLERANCE" default="0.2">到达容差(m)</input_port>
+            <output_port name="nav_cancel" default="false">取消导航标志</output_port>
+        </SubTree>
+        <SubTree ID="GoToSupplyZone">
+            <input_port name="current_x">当前X坐标</input_port>
+            <input_port name="current_y">当前Y坐标</input_port>
+            <input_port name="SUPPLYZONE_X" default="8.0">补给区X</input_port>
+            <input_port name="SUPPLYZONE_Y" default="4.0">补给区Y</input_port>
+            <input_port name="XY_TOLERANCE" default="0.2">到达容差(m)</input_port>
+            <output_port name="nav_cancel" default="false">取消导航标志</output_port>
+        </SubTree>
+        <SubTree ID="Patrol">
+            <input_port name="patrol_points_x">巡逻点X坐标列表</input_port>
+            <input_port name="patrol_points_y">巡逻点Y坐标列表</input_port>
+            <input_port name="current_x">当前X坐标</input_port>
+            <input_port name="current_y">当前Y坐标</input_port>
+            <input_port name="XY_TOLERANCE" default="0.2">到达容差(m)</input_port>
+            <output_port name="nav_target_x">当前巡逻目标X</output_port>
+            <output_port name="nav_target_y">当前巡逻目标Y</output_port>
+            <output_port name="nav_cancel" default="false">取消导航标志</output_port>
+        </SubTree>
+        <SubTree ID="Dodge">
+            <input_port name="current_x">当前X坐标</input_port>
+            <input_port name="current_y">当前Y坐标</input_port>
+            <input_port name="nav_target_x">躲避目标X</input_port>
+            <input_port name="nav_target_y">躲避目标Y</input_port>
+            <input_port name="XY_TOLERANCE" default="0.2">到达容差(m)</input_port>
+            <output_port name="nav_cancel" default="false">取消导航标志</output_port>
+        </SubTree>
+        <SubTree ID="ChaseEnemy">
+            <input_port name="current_x">当前X坐标</input_port>
+            <input_port name="current_y">当前Y坐标</input_port>
+            <input_port name="target_distance">所有目标距离数组</input_port>
+            <input_port name="target_id">追击目标编号</input_port>
+            <input_port name="min_dist" default="1.2">最近追击距离(m)</input_port>
+            <input_port name="max_dist" default="4.0">最远追击距离(m)</input_port>
+            <input_port name="close_to" default="2.8">靠近阈值(m)</input_port>
+            <input_port name="back_to" default="1.8">后退阈值(m)</input_port>
+            <input_port name="XY_TOLERANCE" default="0.2">到达容差(m)</input_port>
+            <output_port name="nav_target_x">追击导航目标X</output_port>
+            <output_port name="nav_target_y">追击导航目标Y</output_port>
+            <output_port name="nav_cancel" default="false">取消导航标志</output_port>
+        </SubTree>
+    </TreeNodesModel>
+
 </root>
