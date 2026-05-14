@@ -37,3 +37,27 @@ public:
         return NodeStatus::FAILURE;
     }
 };
+
+/*
+    @brief 检查哨兵是否处于死亡状态
+    读取 game_period (uint8_t): 0=未开始, 1=死亡/准备, 2=进行中
+    @return SUCCESS game_period == 1 (需要复活); FAILURE 不需要复活
+*/
+class CheckDead : public ConditionNode {
+public:
+    CheckDead(const std::string& name, const NodeConfig& config)
+        : ConditionNode(name, config) {}
+
+    static PortsList providedPorts() {
+        return {
+            InputPort<uint8_t>("game_period", "比赛阶段: 0未开始/1死亡准备/2进行中")
+        };
+    }
+
+    NodeStatus tick() override {
+        uint8_t game_period = 0;
+        if (!getInput("game_period", game_period))
+            return NodeStatus::FAILURE;
+        return (game_period == 1) ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
+    }
+};

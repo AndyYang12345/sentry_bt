@@ -170,6 +170,7 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
     // conditions
     factory.registerNodeType<CheckAmmo>("CheckAmmo");
     factory.registerNodeType<CheckEnemyVisible>("CheckEnemyVisible");
+    factory.registerNodeType<CheckDead>("CheckDead");
     factory.registerNodeType<CheckSelfLowHP>("CheckSelfLowHP");
     factory.registerNodeType<CheckUnderDefenseLowHP>("CheckUnderDefenseLowHP");
     factory.registerNodeType<CheckDamage>("CheckDamage");
@@ -235,6 +236,9 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
     std::string xml_path = "src/decision_process/xml/main.xml";
     auto tree = factory.createTreeFromFile(xml_path, blackboard);
 
+    // 实时日志：每次节点状态变化时输出到控制台
+    BT::StdCoutLogger logger(tree);
+
     // 7. 主循环
     rclcpp::Rate rate(100);  // 100Hz
     while (rclcpp::ok()) {
@@ -250,9 +254,6 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
             (void)blackboard->get("spin_mode",       msg.spin_mode);
             (void)blackboard->get("shoot_mode",      msg.shoot_mode);
             pub_send->publish(msg);
-
-            // 这里不是很清楚如何判定是否成功复活，设置完flag并发送后下一tick清除
-            blackboard->set("confirm_respawn", static_cast<uint8_t>(0));
         }
 
         // --- 发布到 /decision_to_autoaim ---

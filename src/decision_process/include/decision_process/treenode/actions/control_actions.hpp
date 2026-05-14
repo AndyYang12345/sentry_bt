@@ -22,7 +22,7 @@ public:
 
     NodeStatus tick() override {
         setOutput("spin_mode", static_cast<uint8_t>(spin_mode_));
-        return NodeStatus::RUNNING;
+        return NodeStatus::SUCCESS;
     }
 
 protected:

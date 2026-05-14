@@ -48,14 +48,12 @@
 
             <!-- ====================================================
             分支❶ 优先级最高: 复活
-            条件: game_period == 1 (死亡状态)
-            动作: 发送复活确认 → 重置为移动姿态
+            条件: CheckDead → game_period == 1 (死亡状态)
+            动作: 发送复活确认 → 等待血量恢复
             ==================================================== -->
             <Sequence name="RespawnSequence">
-                <!--
-                TODO: 需要一个 CheckDead 条件节点来检查 game_period
-                当前 Respawn 作为 Action 直接触发
-                -->
+                <CheckDead name="check_dead"
+                           game_period="{game_period}"/>
                 <Respawn name="do_respawn"
                          confirm_respawn="{confirm_respawn}"/>
                 <SetPostureMove name="respawn_posture"
