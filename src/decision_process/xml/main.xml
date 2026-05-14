@@ -130,7 +130,7 @@
                 <CheckUnderDefenseLowHP name="check_defense_hp"
                                         hp_sentry="{hp_sentry}"
                                         HP_RETURN_UNDER_DEFENSE="{HP_RETURN_UNDER_DEFENSE}"
-                                        defense_buff="{defence_buff}"/>
+                                        defence_buff="{defence_buff}"/>
                 <SetPostureDefense name="defense_fight_posture"
                                    posture="{posture}"/>
                 <!-- 不导航，进入下一分支尝试进攻 -->

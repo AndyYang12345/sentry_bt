@@ -40,18 +40,18 @@ public:
         return {
             InputPort<uint16_t>("hp_sentry", "当前血量"),
             InputPort<uint16_t>("HP_RETURN_UNDER_DEFENSE", "残血阈值, 默认120"),
-            InputPort<uint8_t>("defense_buff", "当前防御增益百分比, 0-100")
+            InputPort<uint8_t>("defence_buff", "当前防御增益百分比, 0-100")
         };
     }
 
     NodeStatus tick() override {
         uint16_t hp = 0, threshold = 120;
-        uint8_t defense_buff = 0;
+        uint8_t defence_buff = 0;
         if (!getInput("hp_sentry", hp))
             return NodeStatus::FAILURE;
         getInput("HP_RETURN_UNDER_DEFENSE", threshold);
-        getInput("defense_buff", defense_buff);
-        if (defense_buff >= 60) {
+        getInput("defence_buff", defence_buff);
+        if (defence_buff >= 60) {
             return (hp < threshold) ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
         }
         return NodeStatus::FAILURE;
