@@ -63,9 +63,7 @@ class KeyboardMock(Node):
             10)
         self.sub_goal = self.create_subscription(
             PoseStamped, '/goal_pose',
-            lambda msg: self.get_logger().info(
-                f'BT→导航: target=({msg.pose.position.x:.1f}, {msg.pose.position.y:.1f})'),
-            10)
+            self._on_goal_pose, 10)
 
         # ---- 哨兵状态 ----
         self.hp_sentry = 400
@@ -74,6 +72,12 @@ class KeyboardMock(Node):
         self.x = 5.0
         self.y = 3.0
         self.yaw = 0.0
+
+        # ---- 导航模拟 ----
+        self.nav_target_x = None  # None=没有目标
+        self.nav_target_y = None
+        self.nav_cancel = False
+        self.nav_speed = 1.0       # 模拟移动速度 (m/s)
 
         # ---- 敌方状态 ----
         self.enemy_visible = False
@@ -156,9 +160,46 @@ class KeyboardMock(Node):
             self.x = 5.0
             self.y = 3.0
             self.get_logger().info('🔄 全部状态已重置')
+            self.nav_target_x = None
+            self.nav_target_y = None
+
+    def _on_goal_pose(self, msg):
+        """行为树发布了新的导航目标 → 开始自动向目标移动"""
+        tx = msg.pose.position.x
+        ty = msg.pose.position.y
+        self.nav_target_x = tx
+        self.nav_target_y = ty
+        self.nav_cancel = False
+        self.get_logger().info(f'🎯 收到导航目标: ({tx:.1f}, {ty:.1f})')
+
+    def _update_navigation(self, dt):
+        """每 tick 向导航目标移动一步，模拟真实机器人运动"""
+        if self.nav_target_x is None or self.nav_cancel:
+            return  # 没有目标或导航已取消
+
+        import math
+        dx = self.nav_target_x - self.x
+        dy = self.nav_target_y - self.y
+        dist = math.hypot(dx, dy)
+
+        if dist < 0.15:  # 到达容差 (与 XY_TOLERANCE=0.2 对齐)
+            self.nav_target_x = None
+            self.nav_target_y = None
+            self.get_logger().info(f'✅ 已到达目标 ({self.x:.1f}, {self.y:.1f})')
+            return
+
+        step = self.nav_speed * dt
+        if step > dist:
+            step = dist
+        self.x += (dx / dist) * step
+        self.y += (dy / dist) * step
 
     def _publish_all(self):
         """10Hz 定时发布所有话题"""
+        dt = 0.1  # 定时器周期
+
+        # ---- 导航模拟 ----
+        self._update_navigation(dt)
 
         # ---- 裁判系统数据 ====
         rd = ReceiveData()

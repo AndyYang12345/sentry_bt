@@ -104,7 +104,7 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     blackboard->set("SENTRY_MAX_HP",  static_cast<uint16_t>(400));  // 哨兵满血量
     blackboard->set("defence_buff",   static_cast<uint8_t>(0));
     blackboard->set("color",          static_cast<uint8_t>(0));
-    blackboard->set("ammo",           static_cast<uint16_t>(0));
+    blackboard->set("ammo",           static_cast<uint16_t>(100));  // 初始100发
     blackboard->set("ammo_to_collect", static_cast<uint16_t>(0));  // 待领取弹药
     blackboard->set("hp_outpost",     static_cast<uint16_t>(0));
     blackboard->set("hp_base",        static_cast<uint16_t>(0));
@@ -137,9 +137,9 @@ void blackboard_init(BT::Blackboard::Ptr blackboard, const rclcpp::Node::SharedP
     blackboard->set("nav_target_y", 0.0);
     blackboard->set("nav_cancel",   false);
 
-    // --- 巡逻点位 (空列表占位, 实际值建议在 XML 的 TreeNodesModel 中设定, 或由外部订阅写入) ---
-    blackboard->set("patrol_points_x", std::vector<double>{});
-    blackboard->set("patrol_points_y", std::vector<double>{});
+    // --- 巡逻点位 (默认4个角落区域，可在 yaml 中覆盖) ---
+    blackboard->set("patrol_points_x", std::vector<double>{2.0, 13.0, 13.0, 2.0, 7.5});
+    blackboard->set("patrol_points_y", std::vector<double>{2.0, 2.0, 12.0, 12.0, 7.5});
 }
 
 // 运行节点
