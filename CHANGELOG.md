@@ -30,6 +30,7 @@
 - 修改CMakeLists,创建项目目录结构 (6484edb)
 
 ### 🐛 Bug 修复 (Fixed)
+- 清除弹药获取多余接口 (7fd445c)
 - 修正头文件路径问题 (628b3ac)
 - 修正黑板键名taget和nav_target冗余 (253bd62)
 - 修正黑板键名错误问题 (7f5d6b8)
@@ -38,6 +39,7 @@
 - 删去错误信息通信逻辑的动作节点 (151ba47)
 
 ### 📚 文档 (Documentation)
+- 更新 CHANGELOG.md (ee69a81)
 - 更新 CHANGELOG.md (bbf5ce7)
 - 更新 CHANGELOG.md (66841bb)
 - 更新 CHANGELOG.md (78068c9)
