@@ -21,6 +21,16 @@
         ╚══════════════════════════════════════════════════════════╝
         -->
         <ReactiveFallback name="TopLevelSelector">
+            <!-- ====================================================
+            前置计算: 每 tick 计算需要的衍生数据，供后续条件/动作节点使用
+            例如: 计算需要补给的子弹数量 ammo_to_collect
+            ==================================================== -->
+            <Sequence name="UpdateStatusSequence">
+                <CalculateAmmoToCollect name="calc_ammo_to_collect"
+                                  time="{time}"
+                                  game_period="{game_period}"
+                                  ammo_to_collect="{ammo_to_collect}"/>
+            </Sequence>
 
             <!-- ====================================================
             分支❶ 优先级最高: 复活
@@ -37,6 +47,11 @@
                          posture="{posture}"/>
                 <SetPostureMove name="respawn_posture"
                                 posture="{posture}"/>
+                <CheckRespawned name="check_respawned"
+                              hp_sentry="{hp_sentry}"
+                              SENTRY_MAX_HP="{SENTRY_MAX_HP}"
+                              confirm_respawn="{confirm_respawn}"/>
+                <!-- 等待血量恢复，触发标志位清零 -->
             </Sequence>
 
             <!-- ====================================================
@@ -127,6 +142,9 @@
                                 SUPPLYZONE_Y="{SUPPLYZONE_Y}"
                                 XY_TOLERANCE="{XY_TOLERANCE}"
                                 nav_cancel="{nav_cancel}"/>
+                <CollectAmmo name="collect_ammo"
+                             ammo="{ammo}"
+                             ammo_to_collect="{ammo_to_collect}"/>
             </Sequence>
 
             <!-- ====================================================
