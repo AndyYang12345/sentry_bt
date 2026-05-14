@@ -242,8 +242,11 @@ void run_mode(const rclcpp::Node::SharedPtr& node)
     // 7. 主循环
     rclcpp::Rate rate(100);  // 100Hz
     while (rclcpp::ok()) {
-        tree.tickOnce();
+    // 2. **先** 处理所有待处理的消息，更新黑板为最新值
         rclcpp::spin_some(node);
+        
+        // 3. **再** 驱动行为树，使用最新数据做决策
+        tree.tickOnce();
 
         // --- 发布到 /serial_send_data ---
         {

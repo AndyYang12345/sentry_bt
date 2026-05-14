@@ -28,6 +28,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'mock_keyboard = sentry_bringup.mock_keyboard:main',
         ],
     },
 )
